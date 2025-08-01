@@ -1,17 +1,19 @@
 import json
 
-# Read from data.json (already created by fetch_data.py)
 with open("hc_ladder.json") as f:
     data = json.load(f)
 
-# Write an HTML page that includes the message
+lines = [
+    "<!DOCTYPE html>",
+    "<html><head><title>Ladder</title></head><body>",
+    f"<h1>{data['ladder']} Top Characters</h1>",
+    "<ul>",
+]
+
+for char in data["top_characters"]:
+    lines.append(f"<li>{char['name']} ({char['class']}, Level {char['level']})</li>")
+
+lines.extend(["</ul>", "</body></html>"])
+
 with open("index.html", "w") as f:
-    f.write(f"""
-<!DOCTYPE html>
-<html>
-<head><title>Generated Page</title></head>
-<body>
-  <h1>{data['message']}</h1>
-</body>
-</html>
-""")
+    f.write("\n".join(lines))
