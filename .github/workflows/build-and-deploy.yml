@@ -26,11 +26,14 @@ jobs:
       - name: Run build script
         run: python build_pages.py
 
+      - name: Check git status
+        run: git status
+
       - name: Commit and push changes
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git add data.json index.html
+          git add hc_ladder.json index.html
           git commit -m "Auto-update data and HTML"
           git push
         env:
