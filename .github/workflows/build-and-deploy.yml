@@ -37,7 +37,7 @@ jobs:
           head -n 20 index.html || true
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@main
         id: upload-pages
         with:
           path: '.'
