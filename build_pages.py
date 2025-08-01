@@ -4,7 +4,7 @@ import sys
 
 # Force flush to see output in GitHub Actions
 sys.stdout.reconfigure(line_buffering=True)
-print("✅ Running build_pages.py...")
+print("✅ Runnin build_pages.py...")
 
 # Confirm current directory contents
 print("📂 Current directory:")
