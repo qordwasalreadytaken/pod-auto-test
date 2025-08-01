@@ -41,6 +41,7 @@ jobs:
         id: upload-pages
         with:
           path: '.'
+          name: github-pages
 
   deploy:
     needs: build
