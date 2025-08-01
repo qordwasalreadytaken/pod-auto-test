@@ -1,17 +1,30 @@
 import json
 import os
+import sys
 
-print("Running build_pages.py...")
+# Force flush to see output in GitHub Actions
+sys.stdout.reconfigure(line_buffering=True)
+print("✅ Running build_pages.py...")
 
+# Confirm current directory contents
+print("📂 Current directory:")
+for f in os.listdir("."):
+    print(" -", f)
+
+# Check if hc_ladder.json exists
 if not os.path.exists("hc_ladder.json"):
     print("❌ hc_ladder.json not found!")
-    exit(1)
+    sys.exit(1)
+else:
+    print("✅ Found hc_ladder.json")
 
+# Load data
 with open("hc_ladder.json") as f:
     characters = json.load(f)
 
 print(f"✅ Loaded {len(characters)} characters")
 
+# Build HTML
 lines = [
     "<!DOCTYPE html>",
     "<html><head><title>Hardcore Ladder</title></head><body>",
@@ -33,7 +46,8 @@ for char in characters:
 
 lines.extend(["</table>", "</body></html>"])
 
+# Write output
 with open("index.html", "w") as f:
     f.write("\n".join(lines))
 
-print("✅ index.html written")
+print("✅ index.html generated successfully")
