@@ -6,7 +6,7 @@ import sys
 sys.stdout.reconfigure(line_buffering=True)
 print("✅ Runnin build_pages.py...")
 
-# Confirm current directory contents
+# Confirm current directory contents 
 print("📂 Current directory:")
 for f in os.listdir("."):
     print(" -", f)
