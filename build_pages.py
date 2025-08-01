@@ -1,7 +1,16 @@
 import json
+import os
+
+print("Running build_pages.py...")
+
+if not os.path.exists("hc_ladder.json"):
+    print("❌ hc_ladder.json not found!")
+    exit(1)
 
 with open("hc_ladder.json") as f:
     characters = json.load(f)
+
+print(f"✅ Loaded {len(characters)} characters")
 
 lines = [
     "<!DOCTYPE html>",
@@ -26,3 +35,5 @@ lines.extend(["</table>", "</body></html>"])
 
 with open("index.html", "w") as f:
     f.write("\n".join(lines))
+
+print("✅ index.html written")
