@@ -31,3 +31,5 @@ jobs:
         with:
           commit_message: "🔁 Daily update of sc_ladder.json and hc_ladder.json"
           file_pattern: "*.json charts/*"
+        env: 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
