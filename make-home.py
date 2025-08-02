@@ -51,9 +51,54 @@ def fetch_ladder_characters(base_ladder_url, pages):
             print(f"⚠️ Failed to fetch page {page}: {response.status_code}")
     return all_characters
 
+def generate_pie_chart(class_counts):
+    """Generate a pie chart for class distribution of the top 1,000 characters."""
+    classes = list(class_counts.keys())
+    counts = list(class_counts.values())
+
+    if not counts:
+        print("⚠️ No characters found for pie chart.")
+        return
+
+    armory = FontProperties(fname='armory/font/avqest.ttf')  # Update path if needed
+
+    def make_autopct(values):
+        def my_autopct(pct):
+            total = sum(values)
+            val = int(round(pct * total / 100.0))
+            return f'{pct:.1f}% ({val})'
+        return my_autopct
+
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    plt.figure(figsize=(22, 22))
+    plt.subplots_adjust(top=0.5, bottom=0.15)
+
+    wedges, texts, autotexts = plt.pie(
+        counts, labels=classes, autopct=make_autopct(counts), startangle=250,
+        colors=plt.cm.Paired.colors, radius=1.4,
+        textprops={'fontsize': 30, 'color': 'white', 'fontproperties': armory}
+    )
+
+    title = plt.title(
+        f"Class Distribution of Top 1,000 Characters\n\nAs of {timestamp}",
+        pad=50, fontsize=45, fontproperties=armory, loc='left', color="white"
+    )
+    title.set_fontsize(45)  # 🔹 Force title size after creation
+
+    for text in texts:
+        text.set_fontsize(35)  # Class labels
+    for autotext in autotexts:
+        autotext.set_fontsize(25)  # Percentages on slices
+        autotext.set_color('black')
+
+    plt.axis('equal')  # Ensures the pie chart is circular
+    plt.savefig("pod-stats/charts/1kclass_distribution.png", dpi=300, bbox_inches='tight', transparent=True)
+    plt.close()  # Avoid memory issues
+    print("✅ Pie chart saved as 1kclass_distribution.png")
+
 def MakeHome():
     # Define the consolidated JSON file path
-    consolidated_file = "ladder_sc.json"  # Replace with your actual file path
+    consolidated_file = "sc_ladder.json"  # Replace with your actual file path
     
     try:
         # Load the consolidated JSON file
@@ -394,7 +439,7 @@ def MakeHome():
     
     # Function to process each JSON file
     def process_all_characters():
-        with open("ladder_sc.json", "r") as file:
+        with open("sc_ladder.json", "r") as file:
             all_characters = json.load(file)  # Ensure it's a list of dictionaries
 
         for char_data in all_characters:
@@ -512,8 +557,34 @@ def MakeHome():
                 print(f"Error processing character: {char_name}, Error: {e}")
                 continue
 
+        item_summary_by_category = defaultdict(Counter)
+
+        for char_data in all_characters:
+            for item in char_data.get("Equipped", []):
+                worn_category = categorize_worn_slot(item.get("Worn", ""), item.get("TextTag", ""))
+                quality = item.get("QualityCode", "")
+                title = item.get("Title", "")
+                base_type = item.get("TextTag", "")
+
+                if quality == "q_unique":
+                    key = title
+                elif quality == "q_set":
+                    key = title
+                elif quality == "q_runeword":
+                    key = title
+                elif quality == "q_crafted":
+                    key = f"Crafted {base_type}"
+                elif quality == "q_rare":
+                    key = f"Rare {base_type}"
+                elif quality == "q_magic":
+                    key = f"Magic {base_type}"
+                else:
+                    key = f"Normal {base_type}"
+
+                item_summary_by_category[worn_category][key] += 1
 #        return class_counts, runeword_counter, unique_counter, set_counter, synth_counter
-        return class_counts, runeword_counter, unique_counter, set_counter, synth_counter, runeword_users, unique_users, set_users, synth_users, crafted_counters, crafted_users, all_equipped_items
+#        return class_counts, runeword_counter, unique_counter, set_counter, synth_counter, runeword_users, unique_users, set_users, synth_users, crafted_counters, crafted_users, all_equipped_items
+        return class_counts, runeword_counter, unique_counter, set_counter, synth_counter, runeword_users, unique_users, set_users, synth_users, crafted_counters, crafted_users, all_equipped_items, item_summary_by_category
 
     def count_two_handed_weapons(equipped_items, two_handed_bases):
         counter = Counter()
@@ -963,7 +1034,7 @@ def MakeHome():
 
 
     def process_magic_and_rare_items(all_characters, magic_counters, rare_counters, magic_users, rare_users):
-        with open("ladder_sc.json", "r") as file:
+        with open("sc_ladder.json", "r") as file:
             all_characters = json.load(file)  # Ensure it's a list of dictionaries
         print(f"Total characters loaded by process_magic_and_rare_items: {len(all_characters)}")
 #        equipped_items = char_data.get("Equipped", [])
@@ -1026,7 +1097,7 @@ def MakeHome():
 
     def GetSCFunFacts():
         # Path to the consolidated JSON file
-        consolidated_file = "ladder_sc.json"
+        consolidated_file = "sc_ladder.json"
 
         # Load character data from the consolidated JSON file
         try:
@@ -1136,7 +1207,7 @@ def MakeHome():
         median_life = statistics.median(life_values) if life_values else 0
         median_mana = statistics.median(mana_values) if mana_values else 0
 
-        def count_half_freeze_and_cbf(json_path="ladder_sc.json"):
+        def count_half_freeze_and_cbf(json_path="sc_ladder.json"):
             with open(json_path, "r") as file:
                 all_characters = json.load(file)
 
@@ -1294,11 +1365,33 @@ def MakeHome():
 
         return fun_facts_html
 
+    def generate_item_summary(item_summary_by_category):
+        html = ""
+
+        for category, counter in item_summary_by_category.items():
+            sorted_items = counter.most_common()
+            items_html = "".join(
+                f"<div>{name}: {count}</div>" for name, count in sorted_items
+            )
+
+            html += f"""
+            <button class="collapsible">
+                <img src="icons/open-grey.png" class="icon-small open-icon hidden">
+                <img src="icons/closed-grey.png" class="icon-small close-icon">
+                <strong>{category} ({sum(counter.values())})</strong>
+            </button>
+            <div class="content">
+                {items_html}
+            </div>
+            """
+
+        return html
+
     # Generate fun facts
     fun_facts_html = GetSCFunFacts()
 
     # Process the files in the data folder
-    class_counts, runeword_counter, unique_counter, set_counter, synth_counter, runeword_users, unique_users, set_users, synth_users, crafted_counters, crafted_users, all_equipped_items = process_all_characters()
+    class_counts, runeword_counter, unique_counter, set_counter, synth_counter, runeword_users, unique_users, set_users, synth_users, crafted_counters, crafted_users, all_equipped_items, item_summary_by_category = process_all_characters()
     magic_counters, magic_users, rare_counters, rare_users = process_magic_and_rare_items(all_characters, magic_counters, rare_counters, magic_users, rare_users)
 
     from items_list import all_the_items
@@ -1933,7 +2026,7 @@ def MakeHome():
             return rune_counter, non_rune_counter, magic_jewel_counter, rare_jewel_counter, facet_counter
 
         # Example Usage
-        json_file = "ladder_sc.json"
+        json_file = "sc_ladder.json"
         all_items, socketed_items, *_ = process_all_items(json_file)
         just_socketed_runes, just_socketed_non_runes, *_ = count_items_by_type(socketed_items)
 
@@ -2147,7 +2240,7 @@ def MakeHome():
         return html_output
 
     # ✅ Load the consolidated JSON file
-    with open("ladder_sc.json", "r") as file:
+    with open("sc_ladder.json", "r") as file:
         all_characters = json.load(file)
 
 
@@ -3172,6 +3265,8 @@ document.addEventListener('DOMContentLoaded', () => {
     ).replace(
          "{loadouthtml}", generate_loadout_summary_html(loadout_counts, total_loadouts, empty_loadout_count, partially_empty_set_count)
     ).replace(
+         "{item_summary_by_category}", generate_item_summary(item_summary_by_category)
+    ).replace(
         "{html_output}", html_output
     )
 
@@ -3212,7 +3307,7 @@ def fetch_ladder_characters(base_ladder_url, start_page=1, end_page=5):
 
 def MakehcHome():
     # Define the consolidated JSON file path
-    consolidated_file = "ladder_hc.json"  # Replace with your actual file path
+    consolidated_file = "hc_ladder.json"  # Replace with your actual file path
     
     try:
         # Load the consolidated JSON file
@@ -3680,8 +3775,34 @@ def MakehcHome():
                 print(f"Error processing character: {char_name}, Error: {e}")
                 continue
 
+        item_summary_by_category = defaultdict(Counter)
+
+        for char_data in all_characters:
+            for item in char_data.get("Equipped", []):
+                worn_category = categorize_worn_slot(item.get("Worn", ""), item.get("TextTag", ""))
+                quality = item.get("QualityCode", "")
+                title = item.get("Title", "")
+                base_type = item.get("TextTag", "")
+
+                if quality == "q_unique":
+                    key = title
+                elif quality == "q_set":
+                    key = title
+                elif quality == "q_runeword":
+                    key = title
+                elif quality == "q_crafted":
+                    key = f"Crafted {base_type}"
+                elif quality == "q_rare":
+                    key = f"Rare {base_type}"
+                elif quality == "q_magic":
+                    key = f"Magic {base_type}"
+                else:
+                    key = f"Normal {base_type}"
+
+                item_summary_by_category[worn_category][key] += 1
 #        return class_counts, runeword_counter, unique_counter, set_counter, synth_counter
-        return class_counts, runeword_counter, unique_counter, set_counter, synth_counter, runeword_users, unique_users, set_users, synth_users, crafted_counters, crafted_users, all_equipped_items
+#        return class_counts, runeword_counter, unique_counter, set_counter, synth_counter, runeword_users, unique_users, set_users, synth_users, crafted_counters, crafted_users, all_equipped_items
+        return class_counts, runeword_counter, unique_counter, set_counter, synth_counter, runeword_users, unique_users, set_users, synth_users, crafted_counters, crafted_users, all_equipped_items, item_summary_by_category
 
     def count_two_handed_weapons(equipped_items, two_handed_bases):
         counter = Counter()
@@ -4172,7 +4293,7 @@ def MakehcHome():
 
     def GetSCFunFacts():
         # Path to the consolidated JSON file
-        consolidated_file = "ladder_hc.json"
+        consolidated_file = "hc_ladder.json"
 
         # Load character data from the consolidated JSON file
         try:
@@ -4356,11 +4477,33 @@ def MakehcHome():
 
         return fun_facts_html
 
+    def generate_item_summary(item_summary_by_category):
+        html = ""
+
+        for category, counter in item_summary_by_category.items():
+            sorted_items = counter.most_common()
+            items_html = "".join(
+                f"<div>{name}: {count}</div>" for name, count in sorted_items
+            )
+
+            html += f"""
+            <button class="collapsible">
+                <img src="icons/open-grey.png" class="icon-small open-icon hidden">
+                <img src="icons/closed-grey.png" class="icon-small close-icon">
+                <strong>{category} ({sum(counter.values())})</strong>
+            </button>
+            <div class="content">
+                {items_html}
+            </div>
+            """
+
+        return html
+
     # Generate fun facts
     fun_facts_html = GetSCFunFacts()
 
     # Process the files in the data folder
-    class_counts, runeword_counter, unique_counter, set_counter, synth_counter, runeword_users, unique_users, set_users, synth_users, crafted_counters, crafted_users, all_equipped_items = process_all_characters()
+    class_counts, runeword_counter, unique_counter, set_counter, synth_counter, runeword_users, unique_users, set_users, synth_users, crafted_counters, crafted_users, all_equipped_items, item_summary_by_category = process_all_characters()
     magic_counters, magic_users, rare_counters, rare_users = process_magic_and_rare_items(all_characters, magic_counters, rare_counters, magic_users, rare_users)
 
     from items_list import all_the_items
@@ -5001,7 +5144,7 @@ def MakehcHome():
             return rune_counter, non_rune_counter, magic_jewel_counter, rare_jewel_counter, facet_counter
 
         # Example Usage
-        json_file = "ladder_hc.json"
+        json_file = "hc_ladder.json"
         all_items, socketed_items, *_ = process_all_items(json_file)
         just_socketed_runes, just_socketed_non_runes, *_ = count_items_by_type(socketed_items)
 
@@ -6238,6 +6381,8 @@ document.addEventListener('DOMContentLoaded', () => {
          "{one_or_two_html}", analyze_one_or_two_handed_usage_with_characters(all_characters, items_list.all_the_items["one_or_two_hand"])
     ).replace(
          "{loadouthtml}", generate_loadout_summary_html(loadout_counts, total_loadouts, empty_loadout_count, partially_empty_set_count)
+    ).replace(
+         "{item_summary_by_category}", generate_item_summary(item_summary_by_category)
     ).replace(
         "{html_output}", html_output
     )
