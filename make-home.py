@@ -6519,12 +6519,6342 @@ document.addEventListener('DOMContentLoaded', () => {
 
     print("HTML file generated successfully.")
 
+def MakeClassPages():
+    # ✅ Class configurations (previously used for folder paths)
+    classes = [
+        {"what_class": "Barbarian", "howmany_clusters": 10, "howmany_skills": 5},
+        {"what_class": "Druid", "howmany_clusters": 7, "howmany_skills": 5},
+        {"what_class": "Amazon", "howmany_clusters": 11, "howmany_skills": 5},
+        {"what_class": "Assassin", "howmany_clusters": 6, "howmany_skills": 5},
+        {"what_class": "Necromancer", "howmany_clusters": 6, "howmany_skills": 5},
+        {"what_class": "Paladin", "howmany_clusters": 6, "howmany_skills": 5},
+        {"what_class": "Sorceress", "howmany_clusters": 10, "howmany_skills": 5}
+    ]
+
+    icons_folder = "icons"
+
+    # ✅ Load the single JSON file
+    with open("sc_ladder.json", "r") as file:
+        all_characters = json.load(file)
+
+    def map_readable_names(mercenary_type, worn_category=""):
+        mercenary_mapping = {
+            "Desert Mercenary": "Act 2 Desert Mercenary",
+            "Rogue Scout": "Act 1 Rogue Scout",
+            "Eastern Sorceror": "Act 3 Eastern Sorceror",
+            "Barbarian": "Act 5 Barbarian"
+        }
+        worn_mapping = {
+            "body": "Armor",
+            "helmet": "Helmet",
+            "weapon1": "Weapon",
+            "weapon2": "Offhand"
+        }
+        readable_mercenary = mercenary_mapping.get(mercenary_type, mercenary_type)
+        readable_worn = worn_mapping.get(worn_category, worn_category)
+        return readable_mercenary, readable_worn
+
+    def generate_report(what_class, howmany_clusters, howmany_skills, all_characters):
+        # ✅ Filter characters by class
+        filtered_characters = [char for char in all_characters if char.get("Class") == what_class]
+
+        maxed_skills = defaultdict(list)  # skill_name -> list of character names
+
+        for char in filtered_characters:
+            name = char.get("Name", "Unknown")
+            for skill_tab in char.get("SkillTabs", []):
+                for skill in skill_tab.get("Skills", []):
+                    if skill.get("Level", 0) == 20:
+                        skill_name = skill.get("Name", "Unknown Skill")
+                        maxed_skills[skill_name].append(name)
+
+        # 🔎 Optional: Sort for display
+        sorted_maxed_skills = sorted(maxed_skills.items(), key=lambda x: len(x[1]), reverse=True)
+
+        ## Print maxed skill details
+#        print(f"\n=== Maxed Skills for {what_class} ===")
+#        for skill, names in sorted_maxed_skills:
+#            print(f"{skill}: {len(names)} characters")
+#            print(f"  e.g. {', '.join(names[:5])}")
+
+        # ✅ Process Data
+        def load_data(filtered_characters):
+            all_data = []
+            quality_colors = {
+                "q_runeword": "#edcd74",
+                "q_unique": "#edcd74",
+                "q_set": "#45a823",
+                "q_magic": "#7074c9",
+                "q_rare": "yellow",
+                "q_crafted": "orange"
+            }
+
+            for char_data in filtered_characters:
+                if "SkillTabs" in char_data and "Equipped" in char_data:
+                    skill_data = {
+                        "Name": char_data.get("Name", "Unknown"),
+                        "Class": char_data.get("Class", "Unknown"),
+                        "Level": char_data.get("Stats", {}).get("Level", "Unknown")
+                    }
+
+                    # ✅ Extract and sort skills
+                    skills = []
+                    for tab in char_data.get('SkillTabs', []):
+                        for skill in tab.get('Skills', []):
+                            skill_name = skill['Name']
+                            skill_level = skill['Level']
+                            skill_data[skill_name] = skill_level
+                            skills.append((skill_name, skill_level))
+
+                    skills_sorted = sorted(skills, key=lambda x: x[1], reverse=True)
+                    skill_data["Skills"] = ", ".join([
+                        f"<img src='{icons_folder}/{name}.png' alt='{name}' class='skill-icon-smaller'> {name}:{level}"
+                        for name, level in skills_sorted
+                    ])
+
+                    # ✅ Process Equipment
+                    equipment_titles = defaultdict(Counter)
+                    for item in char_data["Equipped"]:
+                        worn_category = item.get("Worn", "Unknown")
+                        title = item.get("Title", "Unknown")
+                        quality_code = item.get("QualityCode", "default")
+                        tag = item.get("Tag", "")
+
+                        # ✅ Standardize worn category names
+                        worn_category = {
+                            "ring1": "Ring", "ring2": "Ring",
+                            "sweapon1": "Left hand", "weapon1": "Left hand",
+                            "sweapon2": "Offhand", "weapon2": "Offhand",
+                            "body": "Armor", "gloves": "Gloves",
+                            "belt": "Belt", "helmet": "Helmet",
+                            "boots": "Boots", "amulet": "Amulet"
+                        }.get(worn_category, worn_category)
+
+                        # ✅ Set colored title
+                        color = quality_colors.get(quality_code, "white")
+                        if quality_code in ["q_magic", "q_rare", "q_crafted"]:
+                            formatted_tag = f" {tag}" if tag else ""
+                            colored_title = f"<span style='color: {color};'>{quality_code.split('_')[1].capitalize()}{formatted_tag}</span>"
+                        else:
+                            colored_title = f"<span style='color: {color};'>{title}</span>"
+
+                        equipment_titles[worn_category][colored_title] += 1
+
+                    # ✅ Convert equipment data to a readable string
+                    skill_data["Equipment"] = ", ".join([
+                        f"{worn}: {title} x{count}" if count > 1 else f"{worn}: {title}"
+                        for worn, titles in equipment_titles.items()
+                        for title, count in titles.items()
+                    ])
+
+                    # ✅ Process mercenary info
+                    mercenary_type = char_data.get("MercenaryType", "No mercenary")
+                    readable_mercenary, _ = map_readable_names(mercenary_type)
+                    mercenary_equipment = ", ".join(
+                        [item.get("Title", "Unknown") for item in char_data.get("MercenaryEquipped", [])]
+                    ) if char_data.get("MercenaryEquipped") else "No equipment"
+
+                    skill_data["Mercenary"] = readable_mercenary
+                    skill_data["MercenaryEquipment"] = mercenary_equipment
+
+                    all_data.append(skill_data)
+
+            return pd.DataFrame(all_data).fillna(0)  # ✅ Fill missing skills with 0
+
+        # ✅ Load the data
+        df = load_data(filtered_characters)
+
+        # Define skill columns (exclude non-skill columns)
+        skill_columns = [col for col in df.columns if col not in ['Name', 'Class', 'Level', 'Skills', 'Equipment', 'Mercenary', 'MercenaryEquipment']]
+
+        # Perform PCA
+        pca = PCA(n_components=2)
+        reduced_data = pca.fit_transform(df[skill_columns])
+
+        # Perform KMeans clustering
+#        from sklearn.preprocessing import MinMaxScaler
+#        scaler = MinMaxScaler()
+#        df[skill_columns] = scaler.fit_transform(df[skill_columns])
+#        df['Cluster'] = scaler(df[skill_columns])
+
+####    This was the old way, declaring number of clusters for each class
+#        kmeans = KMeans(n_clusters=howmany_clusters, max_iter=500, random_state=42)
+#        df['Cluster'] = kmeans.fit_predict(df[skill_columns])
+
+####    Characters that hat 80 % skill points in common
+#        from sklearn.metrics.pairwise import cosine_similarity
+#        import numpy as np
+
+        # Extract skill data as array
+#        skill_matrix = df[skill_columns].to_numpy()
+
+        # Compute similarity matrix (cosine similarity works well for distributions)
+#        similarity_matrix = cosine_similarity(skill_matrix)
+
+        # Create an array for cluster labels, initialized as -1 (unassigned)
+#        cluster_labels = np.full(len(df), -1)
+#        cluster_id = 0
+
+        # Assign clusters based on 0.8 similarity threshold
+#        threshold = 0.55
+#        for i in range(len(df)):
+#            if cluster_labels[i] == -1:  # if not assigned yet
+                # Find all characters similar enough to character i
+#                similar_indices = np.where(similarity_matrix[i] >= threshold)[0]
+#                if len(similar_indices) > 1:
+#                    cluster_labels[similar_indices] = cluster_id
+#                    cluster_id += 1
+
+        # Assign "Miscellaneous" cluster for unassigned (-1)
+#        misc_indices = np.where(cluster_labels == -1)[0]
+#        if len(misc_indices) > 0:
+#            cluster_labels[misc_indices] = cluster_id
+#            cluster_id += 1
+
+#        df['Cluster'] = cluster_labels
+#        print(f"[{what_class}] Created {cluster_id} clusters with 80% skill similarity.")
+####    End points-in-common comparrison
+
+####    Variable similarity thresholds
+# Define class-specific similarity thresholds
+        similarity_thresholds = {
+            "Barbarian": 0.70,
+            "Druid": 0.60,
+            "Amazon": 0.65,
+            "Assassin": 0.65,
+            "Necromancer": 0.70,
+            "Paladin": 0.70,
+            "Sorceress": 0.65
+        }
+
+        def similarity_cluster(df, skill_columns, what_class):
+            from sklearn.metrics.pairwise import cosine_similarity
+            import numpy as np
+
+            # Select threshold for this class (default to 0.6 if not in dict)
+            threshold = similarity_thresholds.get(what_class, 0.6)
+            print(f"[{what_class}] Using similarity threshold: {threshold}")
+
+            skill_matrix = df[skill_columns].to_numpy()
+            similarity_matrix = cosine_similarity(skill_matrix)
+
+            cluster_labels = np.full(len(df), -1)
+            cluster_id = 0
+
+            for i in range(len(df)):
+                if cluster_labels[i] == -1:  # Not assigned yet
+                    similar_indices = np.where(similarity_matrix[i] >= threshold)[0]
+                    if len(similar_indices) > 1:
+                        cluster_labels[similar_indices] = cluster_id
+                        cluster_id += 1
+
+            # Miscellaneous cluster for unassigned
+            misc_indices = np.where(cluster_labels == -1)[0]
+            if len(misc_indices) > 0:
+                cluster_labels[misc_indices] = cluster_id
+                cluster_id += 1
+
+            df['Cluster'] = cluster_labels
+            print(f"[{what_class}] Clusters formed: {cluster_id}")
+            return df
+
+        df = similarity_cluster(df, skill_columns, what_class)
+####    End varying threshold
+
+####    Literal 60 points in common
+        import numpy as np
+
+        def cluster_by_common_points(df, skill_columns, min_points_common=60):
+            """
+            Group characters into clusters if they share at least `min_points_common`
+            total skill points across the same skills.
+
+            Args:
+                df (pd.DataFrame): Character data.
+                skill_columns (list): List of skill columns.
+                min_points_common (int): Threshold of common skill points to form a cluster.
+
+            Returns:
+                pd.Series: Cluster labels.
+            """
+            skill_matrix = df[skill_columns].to_numpy()
+            n = len(skill_matrix)
+
+            # Initialize all characters as unassigned (-1)
+            cluster_labels = np.full(n, -1)
+            cluster_id = 0
+
+            for i in range(n):
+                if cluster_labels[i] != -1:
+                    continue  # Already assigned to a cluster
+
+                # Find all characters with enough points in common with character i
+                base = skill_matrix[i]
+                common_points = np.sum(np.minimum(base, skill_matrix), axis=1)
+                similar_indices = np.where(common_points >= min_points_common)[0]
+
+                if len(similar_indices) > 1:
+                    cluster_labels[similar_indices] = cluster_id
+                    cluster_id += 1
+
+            # Miscellaneous cluster for any unassigned characters
+            misc_indices = np.where(cluster_labels == -1)[0]
+            if len(misc_indices) > 0:
+                cluster_labels[misc_indices] = cluster_id
+                cluster_id += 1
+
+            df['Cluster_CommonPoints'] = cluster_labels
+            print(f"Clusters formed using {min_points_common} skill points in common: {cluster_id}")
+            return df
+
+        df = cluster_by_common_points(df, skill_columns, min_points_common=60)
+####    End 60 in common
+
+####    Hybrid cluster
+        from sklearn.metrics.pairwise import cosine_similarity
+        import numpy as np
+
+        def hybrid_cluster(df, skill_columns, min_points_common=60, cosine_threshold=0.6):
+            """
+            Hybrid clustering:
+            1. Group by skill points in common (>= min_points_common).
+            2. Cluster remainder with cosine similarity.
+
+            Args:
+                df (pd.DataFrame): Character data.
+                skill_columns (list): Skill columns.
+                min_points_common (int): Minimum shared skill points to form a build cluster.
+                cosine_threshold (float): Cosine similarity cutoff for the second pass.
+
+            Returns:
+                pd.DataFrame: df with 'Cluster_Hybrid' column.
+            """
+            skill_matrix = df[skill_columns].to_numpy()
+            n = len(skill_matrix)
+
+            # Initialize cluster labels
+            cluster_labels = np.full(n, -1)
+            cluster_id = 0
+
+            # --- Pass 1: Skill Points in Common ---
+            for i in range(n):
+                if cluster_labels[i] != -1:
+                    continue  # already assigned
+
+                base = skill_matrix[i]
+                common_points = np.sum(np.minimum(base, skill_matrix), axis=1)
+                similar_indices = np.where(common_points >= min_points_common)[0]
+
+                if len(similar_indices) > 1:
+                    cluster_labels[similar_indices] = cluster_id
+                    cluster_id += 1
+
+            # --- Pass 2: Cosine Similarity for Remainder ---
+            unassigned = np.where(cluster_labels == -1)[0]
+            if len(unassigned) > 1:
+                remainder = skill_matrix[unassigned]
+                sim_matrix = cosine_similarity(remainder)
+
+                for idx, i in enumerate(unassigned):
+                    if cluster_labels[i] != -1:
+                        continue  # already assigned
+
+                    similar_indices = unassigned[np.where(sim_matrix[idx] >= cosine_threshold)[0]]
+                    if len(similar_indices) > 1:
+                        cluster_labels[similar_indices] = cluster_id
+                        cluster_id += 1
+
+                # Any still unassigned? Put in a misc cluster
+                misc_indices = np.where(cluster_labels == -1)[0]
+                if len(misc_indices) > 0:
+                    cluster_labels[misc_indices] = cluster_id
+                    cluster_id += 1
+
+            df['Cluster_Hybrid'] = cluster_labels
+            print(f"[Hybrid] {cluster_id} clusters formed (≥{min_points_common} points + cosine ≥{cosine_threshold})")
+            return df
+        
+        df = hybrid_cluster(df, skill_columns, min_points_common=60, cosine_threshold=0.6)
+
+####    End Hybrid
+
+
+#        kmeans = KMeans(n_clusters=howmany_clusters, max_iter=500, init='k-means++', random_state=42)
+#        df['Cluster'] = kmeans.fit_predict(df[skill_columns])
+
+#        import matplotlib.pyplot as plt
+#        from sklearn.cluster import KMeans
+
+        # Try multiple k values
+#        inertia = []
+#        k_range = range(2, 15)  # Test different k values
+
+#        for k in k_range:
+#            kmeans = KMeans(n_clusters=k, init='k-means++', random_state=42)
+#            kmeans.fit(df[skill_columns])
+#            inertia.append(kmeans.inertia_)  # Inertia = Sum of squared distances to cluster centers
+
+        # Plot the elbow curve
+#        plt.figure(figsize=(8, 5))
+#        plt.plot(k_range, inertia, marker='o')
+#        plt.xlabel("Number of Clusters (k)")
+#        plt.ylabel("Inertia (Within-Cluster Sum of Squares)")
+#        plt.title("Elbow Method for Optimal k")
+#        plt.show()
+
+
+        # Calculate the average points invested in skills per cluster
+        df['Total_Points'] = df[skill_columns].sum(axis=1)
+        cluster_averages = df.groupby('Cluster')['Total_Points'].mean().reset_index()
+        cluster_averages.columns = ['Cluster', 'Avg_Points']
+
+        # Merge the averages back into the main DataFrame
+        df = pd.merge(df, cluster_averages, on='Cluster')
+
+        # Get skill averages per cluster
+        skill_averages = df.groupby('Cluster')[skill_columns].mean()
+
+        # Identify the top skills per cluster with their average points
+        top_skills_with_avg = skill_averages.apply(lambda x: [(skill, round(x[skill], 2)) for skill in x.nlargest(howmany_skills).index], axis=1)
+
+        # Calculate the correct percentages for each cluster
+        cluster_counts = df['Cluster'].value_counts(normalize=True) * 100
+        df['Percentage'] = df['Cluster'].map(cluster_counts)
+
+        # Map clusters to meaningful names (top skills with average points)
+        cluster_labels = {i: ", ".join([f"{skill} ({avg})" for skill, avg in skills]) for i, skills in enumerate(top_skills_with_avg)}
+        df['Cluster_Label'] = df['Cluster'].map(cluster_labels)
+
+        # Counters for classes, runewords, uniques, and set items
+        class_counts = {}
+        runeword_counter = Counter()
+        unique_counter = Counter()
+        set_counter = Counter()
+        synth_counter = Counter()
+        crafted_counters = {
+            "Rings": Counter(),
+            "Weapons and Shields": Counter(),
+            "Arrows": Counter(),
+            "Bolts": Counter(),
+            "Body Armor": Counter(),
+            "Gloves": Counter(),
+            "Belts": Counter(),
+            "Helmets": Counter(),
+            "Boots": Counter(),
+            "Amulets": Counter(),
+        }
+        magic_counters = {
+            "Rings": Counter(),
+            "Weapons and Shields": Counter(),
+            "Arrows": Counter(),
+            "Bolts": Counter(),
+            "Body Armor": Counter(),
+            "Gloves": Counter(),
+            "Belts": Counter(),
+            "Helmets": Counter(),
+            "Boots": Counter(),
+            "Amulets": Counter(),
+        }
+        rare_counters = {
+            "Rings": Counter(),
+            "Weapons and Shields": Counter(),
+            "Arrows": Counter(),
+            "Bolts": Counter(),
+            "Body Armor": Counter(),
+            "Gloves": Counter(),
+            "Belts": Counter(),
+            "Helmets": Counter(),
+            "Boots": Counter(),
+            "Amulets": Counter(),
+        }
+        
+        synth_sources = {}  # Maps item names to all synth items that used them
+
+        runeword_users = {}
+        unique_users = {}
+        set_users = {}
+        synth_users = {}
+        crafted_users = {category: {} for category in crafted_counters}  # Ensure all categories exist
+        rare_users = {category: {} for category in crafted_counters}  # Ensure all categories exist
+        magic_users = {category: {} for category in crafted_counters}  # Ensure all categories exist
+
+        all_characters = []
+        sorted_just_socketed_runes = {}
+        sorted_just_socketed_excluding_runewords_runes = {}
+        all_other_items = {}
+
+        def process_all_characters(filtered_characters):
+            """Processes all characters from the single JSON file instead of iterating through folders."""
+
+            # Dictionary to store class counts
+            class_counts = Counter()
+
+            # Counters for different item types
+            runeword_counter = Counter()
+            unique_counter = Counter()
+            set_counter = Counter()
+            synth_counter = Counter()
+            crafted_counters = defaultdict(Counter)
+
+            # User tracking dictionaries
+            runeword_users = defaultdict(list)
+            unique_users = defaultdict(list)
+            set_users = defaultdict(list)
+            synth_users = defaultdict(list)
+            crafted_users = defaultdict(lambda: defaultdict(list))
+#            synth_sources = defaultdict(list)
+
+            def categorize_worn_slot(worn_category, text_tag):
+                if worn_category in ["sweapon1", "weapon1", "sweapon2", "weapon2"]:
+                    if text_tag == "Arrows":
+                        return "Arrows"
+                    elif text_tag == "Bolts":
+                        return "Bolts"
+                    else:
+                        return "Weapons and Shields"
+
+                worn_category_map = {
+                    "ring1": "Ring", "ring2": "Ring",
+                    "body": "Armor",
+                    "gloves": "Gloves",
+                    "belt": "Belt",
+                    "helmet": "Helmet",
+                    "boots": "Boots",
+                    "amulet": "Amulets",
+                }
+
+                return worn_category_map.get(worn_category, "Other")  # Default to "Other"
+
+            # ✅ Iterate through all characters in the JSON file
+            for char_data in filtered_characters:
+                char_name = char_data.get("Name", "Unknown")
+                char_class = char_data.get("Class", "Unknown")
+                char_level = char_data.get("Stats", {}).get("Level", "Unknown")
+
+                # ✅ Count classes
+                class_counts[char_class] += 1
+
+                # ✅ Process equipped items
+                for item in char_data.get("Equipped", []):
+                    worn_category = categorize_worn_slot(item.get("Worn", ""), item.get("TextTag", ""))
+                    character_info = {"name": char_name, "class": char_class, "level": char_level}
+
+                    # ✅ Process Synthesized items
+                    if "synth" in item.get("Tag", "").lower() or "synth" in item.get("TextTag", "").lower():
+                        item_title = item["Title"]
+                        synth_counter[item_title] += 1
+                        synth_users.setdefault(item_title, []).append(character_info)
+
+                        # Process SynthesisedFrom property
+                        synthesized_from = item.get("SynthesisedFrom", [])
+                        all_related_items = [item_title] + synthesized_from
+                        for source_item in all_related_items:
+#                            print(f"{source_item}")
+                            synth_sources.setdefault(source_item, []).append({
+                                "name": char_name,
+                                "class": char_class,
+                                "level": char_level,
+                                "synthesized_item": item_title
+                            })
+#                        print(f"{synth_sources}")
+
+                    # ✅ Process item qualities
+                    quality_code = item.get("QualityCode", "")
+
+                    if item.get("QualityCode") == "q_runeword":
+                        title = item["Title"]
+                        if title == "2693":
+                            title = "Delirium"
+                        elif title == "-26":
+                            title = "Pattern2"
+
+                        runeword_counter[title] += 1
+
+                        base = item.get("Tag", "Unknown")
+                        if title not in runeword_users:
+                            runeword_users[title] = {}
+                        if base not in runeword_users[title]:
+                            runeword_users[title][base] = []
+                        runeword_users[title][base].append(character_info)
+
+                    elif quality_code == "q_unique":
+                        unique_counter[item["Title"]] += 1
+                        unique_users[item["Title"]].append(character_info)
+
+                    elif quality_code == "q_set":
+                        set_counter[item["Title"]] += 1
+                        set_users[item["Title"]].append(character_info)
+
+                    elif quality_code == "q_crafted":
+                        crafted_counters[worn_category][item["Title"]] += 1
+                        crafted_users[worn_category][item["Title"]].append(character_info)
+
+            return (
+                class_counts, runeword_counter, unique_counter, set_counter, synth_counter,
+                runeword_users, unique_users, set_users, synth_users, crafted_counters, crafted_users
+            )
+
+        def process_all_characters_for_magic_rare(filtered_characters):
+            """Processes all characters for magic and rare items using the single JSON file."""
+
+            magic_counters = defaultdict(Counter)
+            rare_counters = defaultdict(Counter)
+            magic_users = defaultdict(lambda: defaultdict(list))
+            rare_users = defaultdict(lambda: defaultdict(list))
+
+            def categorize_worn_slot(worn_category, text_tag):
+                if worn_category in ["sweapon1", "weapon1", "sweapon2", "weapon2"]:
+                    if text_tag == "Arrows":
+                        return "Arrows"
+                    elif text_tag == "Bolts":
+                        return "Bolts"
+                    else:
+                        return "Weapons and Shields"
+
+                worn_category_map = {
+                    "ring1": "Ring", "ring2": "Rings",
+                    "body": "Armor",
+                    "gloves": "Gloves",
+                    "belt": "Belts",
+                    "helmet": "Helmets",
+                    "boots": "Boots",
+                    "amulet": "Amulets",
+                }
+
+                return worn_category_map.get(worn_category, "Other")  # Default to "Other"
+
+            # ✅ Iterate through all characters
+            for char_data in filtered_characters:
+                char_name = char_data.get("Name", "Unknown")
+                char_class = char_data.get("Class", "Unknown")
+                char_level = char_data.get("Stats", {}).get("Level", "Unknown")
+
+                # ✅ Process equipped items
+                for item in char_data.get("Equipped", []):
+                    worn_category = categorize_worn_slot(item.get("Worn", ""), item.get("TextTag", ""))
+                    character_info = {"name": char_name, "class": char_class, "level": char_level}
+
+                    quality_code = item.get("QualityCode", "")
+                    if quality_code == "q_magic":
+                        magic_counters[worn_category][item["Title"]] += 1
+                        magic_users[worn_category][item["Title"]].append(character_info)
+
+                    elif quality_code == "q_rare":
+                        rare_counters[worn_category][item["Title"]] += 1
+                        rare_users[worn_category][item["Title"]].append(character_info)
+
+            return magic_counters, magic_users, rare_counters, rare_users
+
+        class_counts, runeword_counter, unique_counter, set_counter, synth_counter, runeword_users, unique_users, set_users, synth_users, crafted_counters, crafted_users = process_all_characters(filtered_characters)
+
+        magic_counters, magic_users, rare_counters, rare_users = process_all_characters_for_magic_rare(filtered_characters)
+
+        # Get the most common items
+        most_common_runewords = runeword_counter.most_common(10)
+        most_common_uniques = unique_counter.most_common(10)
+        most_common_set_items = set_counter.most_common(10)
+
+        # Get all the items
+        all_runewords = runeword_counter.most_common(150)
+        all_uniques = unique_counter.most_common(450)
+        all_set = set_counter.most_common(150)
+        all_synth = synth_counter.most_common(150)
+
+        # Get the least common items
+        least_common_runewords = runeword_counter.most_common()[:-11:-1]
+        least_common_uniques = unique_counter.most_common()[:-11:-1]
+        least_common_set_items = set_counter.most_common()[:-11:-1]
+
+        def slugify(name):
+            return name.lower().replace(" ", "-").replace("'", "").replace('"', "")
+
+        # Generate list items
+        def generate_list_items(items):
+            return ''.join(
+                f'<li><a href="#{slug}">{name}</a>: {count}</li>'
+                for item, count in items
+                for name in [  # map item IDs to readable names
+                    "Delirium" if item == "2693" else 
+                    "Pattern2" if item == "-26" else 
+                    item
+                ]
+                for slug in [slugify(name)]
+            )
+
+        def generate_all_list_items(counter, character_data):
+            if not isinstance(character_data, dict):
+                print("Error: character_data is not a dict! Type:", type(character_data))
+                return ""
+
+            items_html = ""
+
+            for item, count in counter:
+                display_item = "Delirium" if item == "2693" else "Pattern2" if item == "-26" else item
+                anchor_id = slugify(display_item)
+
+                character_info = character_data.get(item)
+
+                # 🧠 If this item has nested dicts (base → [characters]), it's a runeword
+                if isinstance(character_info, dict):
+                    base_html = ""
+                    for base, characters in sorted(character_info.items(), key=lambda kv: len(kv[1]), reverse=True):
+                        characters_html = "".join(
+                            f""" 
+                            <div class="character-info">
+                                <div class="character-link">
+                                    <a href="https://beta.pathofdiablo.com/armory?name={char['name']}" target="_blank">
+                                        {char['name']}
+                                    </a>
+                                </div>
+                                <div>Level {char['level']} {char['class']}</div>
+                                <div class="hover-trigger" data-character-name="{char['name']}"></div>
+                            </div>
+                            <div class="character"><div class="popup hidden"></div></div>
+                            """ for char in characters
+                        )
+
+                        base_html += f"""
+                        <button class="collapsible">
+                            <img src="icons/open-grey.png" class="icon-small open-icon hidden">
+                            <img src="icons/closed-grey.png" class="icon-small close-icon">
+                            <strong>{base} ({len(characters)} users)</strong>
+                        </button>
+                        <div class="content" id="{slugify(f"{display_item}-{base}")}">
+                            {characters_html or "<p>No characters using this base.</p>"}
+                        </div>
+                        """
+
+                    items_html += f"""
+                    <button class="collapsible">
+                        <img src="icons/open-grey.png" class="icon-small open-icon hidden">
+                        <img src="icons/closed-grey.png" class="icon-small close-icon">
+                        <strong>
+                            <a href="#{anchor_id}" class="anchor-link">
+                                {display_item} ({count} users)
+                            </a>
+                        </strong>
+                    </button>
+                    <div class="content" id="{anchor_id}">
+                        {base_html or "<p>No characters using this item.</p>"}
+                    </div>
+                    """
+
+                else:
+                    # 🧠 Flat list: uniques, sets, synths
+                    character_list = character_info or []
+
+                    character_list_html = "".join(
+                        f""" 
+                        <div class="character-info">
+                            <div class="character-link">
+                                <a href="https://beta.pathofdiablo.com/armory?name={char['name']}" target="_blank">
+                                    {char['name']}
+                                </a>
+                            </div>
+                            <div>Level {char['level']} {char['class']}</div>
+                            <div class="hover-trigger" data-character-name="{char['name']}"></div>
+                        </div>
+                        <div class="character"><div class="popup hidden"></div></div>
+                        """ for char in character_list
+                    )
+
+                    items_html += f"""
+                    <button class="collapsible">
+                        <img src="icons/open-grey.png" class="icon-small open-icon hidden">
+                        <img src="icons/closed-grey.png" class="icon-small close-icon">
+                        <strong>
+                            <a href="#{anchor_id}" class="anchor-link">
+                                {display_item} ({count} users)
+                            </a>
+                        </strong>
+                    </button>
+                    <div class="content" id="{anchor_id}">
+                        {character_list_html or "<p>No characters using this item.</p>"}
+                    </div>
+                    """
+
+            return items_html
+
+        def generate_synth_list_items(counter: Counter, synth_users: dict):
+            items_html = ""
+    #        for item, count in counter.items():
+            for item, count in sorted(counter.items(), key=lambda x: (-x[1], x[0])):
+
+                character_list = synth_users.get(item, [])  # Directly fetch correct list
+
+                character_list_html = "".join(
+                    f""" 
+                    <div class="character-info">
+                        <div class="character-link">
+                            <a href="https://beta.pathofdiablo.com/armory?name={char["name"]}" target="_blank">
+                                {char["name"]}
+                            </a>
+                        </div>
+                        <div>Level {char["level"]} {char["class"]}</div>
+                        <div class="hover-trigger" data-character-name="{char["name"]}"></div>
+                    </div>
+                    <div class="character">
+                        <div class="popup hidden"></div> <!-- No iframe inside initially -->
+                    </div>
+                    """ for char in character_list
+                )
+
+                anchor_id = slugify(item)
+                items_html += f"""
+                <button class="collapsible">
+                    <img src="icons/open-grey.png" alt="All Runewords Open" class="icon-small open-icon hidden">
+                    <img src="icons/closed-grey.png" alt="Runewords Close" class="icon-small close-icon">
+                    <strong>
+                    <a href="#synth-{anchor_id}" class="anchor-link">
+                        {item} ({count} users)
+                    </a>
+                    </strong>
+                </button>
+                <div class="content" id="synth-{anchor_id}">
+                    {character_list_html if character_list else "<p>No characters using this item.</p>"}
+                </div>
+                """
+            
+            return items_html
+
+        synth_user_count = sum(len(users) for users in synth_users.values())
+
+        def generate_synth_source_list(synth_sources):
+            items_html = ""
+
+    #        for source_item, characters in synth_sources.items():
+            for source_item, characters in sorted(synth_sources.items(), key=lambda x: (-len(x[1]), x[0])):
+        
+                character_list_html = "".join(
+                    f"""
+                    <div class="character-info">
+                        <div class="character-link">
+                            <a href="https://beta.pathofdiablo.com/armory?name={char["name"]}" target="_blank">
+                                {char["name"]}
+                            </a>
+                        </div>
+                        <div>Level {char["level"]} {char["class"]}</div>
+                        <div>Used in: <strong>{char["synthesized_item"]}</strong></div>
+                        <div class="hover-trigger" data-character-name="{char["name"]}"></div>
+                    </div>
+                    <div class="character">
+                        <div class="popup hidden"></div> <!-- No iframe inside initially -->
+                    </div>
+                    """ for char in characters
+                )
+
+                anchor_id = slugify(source_item)
+                items_html += f"""
+                <button class="collapsible">
+                    <img src="icons/open-grey.png" alt="All Runewords Open" class="icon-small open-icon hidden">
+                    <img src="icons/closed-grey.png" alt="Runewords Close" class="icon-small close-icon">
+                    <strong>
+                    <a href="#synthsource-{anchor_id}" class="anchor-link">
+                        {source_item} (Found in {len(characters)} Items)
+                    </a>
+                    </strong>
+                </button>
+                <div class="content" id="synthsource-{anchor_id}">
+                    {character_list_html if characters else "<p>No characters using this item.</p>"}
+                </div>
+                """
+
+            return items_html
+        synth_source_user_count = sum(len(users) for users in synth_sources.values())
+
+
+        def generate_crafted_list_items(crafted_counters, crafted_users):
+            items_html = ""
+
+            for worn_category, counter in crafted_counters.items():
+                if not counter:  # Skip empty categories
+                    continue
+                
+                # Collect all characters in this category
+                category_users = []
+                for item, count in counter.items():
+                    category_users.extend(crafted_users.get(worn_category, {}).get(item, []))
+
+                # Skip categories with no users
+                if not category_users:
+                    continue
+
+                # Create the list of all users in this category
+                character_list_html = "".join(
+                    f"""
+                    <div class="character-info">
+                        <div class="character-link">
+                            <a href="https://beta.pathofdiablo.com/armory?name={char["name"]}" target="_blank">
+                                {char["name"]}
+                            </a>
+                        </div>
+                        <div>Level {char["level"]} {char["class"]}</div>
+                        <div class="hover-trigger" data-character-name="{char["name"]}"></div>
+                    </div>
+                    <div class="character">
+                        <div class="popup hidden"></div> <!-- No iframe inside initially -->
+                    </div>
+                    """ for char in category_users
+                )
+
+                # Create a collapsible button for each category
+                items_html += f"""
+                <button class="collapsible">
+                    <img src="icons/open-grey.png" alt="All Runewords Open" class="icon-small open-icon hidden">
+                    <img src="icons/closed-grey.png" alt="Runewords Close" class="icon-small close-icon">
+                    <strong>Crafted {worn_category} ({len(category_users)} users)</strong>
+                </button>
+                <div class="content">
+                    {character_list_html if category_users else "<p>No characters using crafted items in this category.</p>"}
+                </div>
+                """
+
+            return items_html
+        craft_user_count = sum(len(users) for users in crafted_users.values())
+
+
+        def generate_magic_list_items(magic_counters, magic_users):
+            items_html = ""
+
+            for worn_category, counter in magic_counters.items():
+                if not counter:  # Skip empty categories
+                    continue
+                
+                # Collect all characters in this category
+                category_users = []
+                for item, count in counter.items():
+                    category_users.extend(magic_users.get(worn_category, {}).get(item, []))
+
+                # Skip categories with no users
+                if not category_users:
+                    continue
+
+                # Create the list of all users in this category
+                character_list_html = "".join(
+                    f"""
+                    <div class="character-info">
+                        <div class="character-link">
+                            <a href="https://beta.pathofdiablo.com/armory?name={char["name"]}" target="_blank">
+                                {char["name"]}
+                            </a>
+                        </div>
+                        <div>Level {char["level"]} {char["class"]}</div>
+                        <div class="hover-trigger" data-character-name="{char["name"]}"></div>
+                    </div>
+                    <div class="character">
+                        <div class="popup hidden"></div> <!-- No iframe inside initially -->
+                    </div>
+                    """ for char in category_users
+                )
+
+                # Create a collapsible button for each category
+                items_html += f"""
+                <button class="collapsible">
+                    <img src="icons/open-grey.png" alt="All Runewords Open" class="icon-small open-icon hidden">
+                    <img src="icons/closed-grey.png" alt="Runewords Close" class="icon-small close-icon">
+                    <strong>Magic {worn_category} ({len(category_users)} users)</strong>
+                </button>
+                <div class="content">
+                    {character_list_html if category_users else "<p>No characters using magic items in this category.</p>"}
+                </div>
+                """
+
+            return items_html
+        magic_user_count = sum(len(users) for users in magic_users.values())
+
+
+        def generate_rare_list_items(rare_counter, rare_users):
+            items_html = ""
+
+            for worn_category, counter in rare_counter.items():
+                if not counter:  # Skip empty categories
+                    continue
+                
+                # Collect all characters in this category
+                category_users = []
+                for item, count in counter.items():
+                    category_users.extend(rare_users.get(worn_category, {}).get(item, []))
+
+                # Skip categories with no users
+                if not category_users:
+                    continue
+
+                # Create the list of all users in this category
+                character_list_html = "".join(
+                    f"""
+                    <div class="character-info">
+                        <div class="character-link">
+                            <a href="https://beta.pathofdiablo.com/armory?name={char["name"]}" target="_blank">
+                                {char["name"]}
+                            </a>
+                        </div>
+                        <div>Level {char["level"]} {char["class"]}</div>
+                        <div class="hover-trigger" data-character-name="{char["name"]}"></div>
+                    </div>
+                    <div class="character">
+                        <div class="popup hidden"></div> <!-- No iframe inside initially -->
+                    </div>
+                    """ for char in category_users
+                )
+
+                # Create a collapsible button for each category
+                items_html += f"""
+                <button class="collapsible">
+                    <img src="icons/open-grey.png" alt="All Runewords Open" class="icon-small open-icon hidden">
+                    <img src="icons/closed-grey.png" alt="Runewords Close" class="icon-small close-icon">
+                    <strong>Rare {worn_category} ({len(category_users)} users)</strong>
+                </button>
+                <div class="content">
+                    {character_list_html if category_users else "<p>No characters using Rare items in this category.</p>"}
+                </div>
+                """
+
+            return items_html
+        rare_user_count = sum(len(users) for users in rare_users.values())
+
+        def socket_html(filtered_characters):
+            """Generates socketed item analysis from sc_ladder.json."""
+
+            rune_names = {
+                "El Rune", "Eld Rune", "Tir Rune", "Nef Rune", "Eth Rune", "Ith Rune", "Tal Rune", "Ral Rune", "Ort Rune", "Thul Rune", "Amn Rune", "Sol Rune",
+                "Shael Rune", "Dol Rune", "Hel Rune", "Io Rune", "Lum Rune", "Ko Rune", "Fal Rune", "Lem Rune", "Pul Rune", "Um Rune", "Mal Rune", "Ist Rune",
+                "Gul Rune", "Vex Rune", "Ohm Rune", "Lo Rune", "Sur Rune", "Ber Rune", "Jah Rune", "Cham Rune", "Zod Rune"
+            }
+
+            # ✅ Categorization
+            all_items = []
+            socketed_items = []
+            items_excluding_runewords = []
+            just_socketed = []
+            just_socketed_excluding_runewords = []
+            facet_elements = defaultdict(list)
+            shields_for_skulls = []
+            weapons_for_skulls = []
+            helmets_for_skulls = []
+            armor_for_skulls = []
+            jewel_counts = Counter()
+            jewel_groupings = {"magic": [], "rare": []}
+
+            # ✅ Function to extract Rainbow Facet element type
+            def extract_element(item):
+                if item.get('Title') == 'Rainbow Facet':
+                    element_types = ["fire", "cold", "lightning", "poison", "physical", "magic"]
+                    for element in element_types:
+                        for prop in item.get('PropertyList', []):
+                            if element in prop.lower():
+                                return element.capitalize()
+                return item.get('Title', 'Unknown')  # Use title if not "Rainbow Facet"
+
+            # ✅ Process all characters
+            for char_data in filtered_characters:
+                for item in char_data.get('Equipped', []):
+
+                    # ✅ Categorize Perfect Skulls
+                    worn_category = item.get('Worn', '')
+                    for socketed_item in item.get('Sockets', []):
+                        if socketed_item.get('Title') == "Perfect Skull":
+                            if worn_category == 'helmet':
+                                helmets_for_skulls.append(socketed_item)
+                            elif worn_category == 'body':
+                                armor_for_skulls.append(socketed_item)
+                            elif worn_category in ['weapon1', 'weapon2', 'sweapon1', 'sweapon2']:
+                                if any("Block" in prop for prop in item.get('PropertyList', [])):  # ✅ Identify shields
+                                    shields_for_skulls.append(socketed_item)
+                                else:
+                                    weapons_for_skulls.append(socketed_item)
+
+                    # ✅ Process socketed items
+                    if item.get('SocketCount', '0') > '0':  # Item has sockets
+                        all_items.append(item)
+                        if item.get('QualityCode') != 'q_runeword':  # Exclude runewords
+                            items_excluding_runewords.append(item)
+
+                        for socketed_item in item.get('Sockets', []):
+                            element = extract_element(socketed_item)
+                            socketed_items.append(socketed_item)
+                            facet_elements[element].append(socketed_item)
+                            just_socketed.append(socketed_item)
+
+                            # ✅ Categorize Magic & Rare Jewels
+                            quality_code = socketed_item.get('QualityCode', '')
+                            if quality_code == "q_magic":
+                                socketed_item["GroupedTitle"] = "Misc. Magic Jewels"
+                            elif quality_code == "q_rare":
+                                socketed_item["GroupedTitle"] = "Misc. Rare Jewels"
+                            else:
+                                socketed_item["GroupedTitle"] = socketed_item.get("Title", "Unknown")
+
+                            if item.get('QualityCode') != 'q_runeword':
+                                just_socketed_excluding_runewords.append(socketed_item)
+
+            # ✅ Function to count socketed items
+            def count_items_by_type(items):
+                rune_counter = Counter()
+                non_rune_counter = Counter()
+                magic_jewel_counter = Counter()
+                rare_jewel_counter = Counter()
+                facet_counter = defaultdict(lambda: {"count": 0, "perfect": 0})
+
+                for item in items:
+                    title = item.get('Title', 'Unknown')
+                    quality = item.get('QualityCode', '')
+
+                    if title in rune_names:
+                        rune_counter[title] += 1
+                    elif "Rainbow Facet" in title:
+                        element = extract_element(item)
+                        facet_counter[element]["count"] += 1
+                        properties = item.get('PropertyList', [])
+                        if any("+5" in prop for prop in properties) and any("-5" in prop for prop in properties):
+                            facet_counter[element]["perfect"] += 1
+                    elif quality == "q_magic":
+                        has_splash = any("splash" in prop.lower() for prop in item.get("PropertyList", []))
+                        has_ias = any("attack speed" in prop.lower() for prop in item.get("PropertyList", []))
+                        has_ed = any("enhanced damage" in prop.lower() for prop in item.get("PropertyList", []))
+                        has_iassplash = has_ias and has_splash
+                        has_iased = has_ias and has_ed
+                        magic_jewel_counter["Misc. Magic Jewels"] += 1
+                        if has_splash:
+                            magic_jewel_counter["splash"] += 1
+                        if has_ias:
+                            magic_jewel_counter["attack speed"] += 1
+                        if has_ed:
+                            magic_jewel_counter["enhanced damage"] += 1
+                        if has_iassplash:
+                            magic_jewel_counter["iassplash"] += 1
+                        if has_iased:
+                            magic_jewel_counter["iased"] += 1
+                    elif quality == "q_rare":
+                        has_splash = any("splash" in prop.lower() for prop in item.get("PropertyList", []))
+                        has_ed = any("enhanced damage" in prop.lower() for prop in item.get("PropertyList", []))
+                        rare_jewel_counter["Misc. Rare Jewels"] += 1
+                        if has_splash:
+                            rare_jewel_counter["splash"] += 1
+                        if has_ed:
+                            rare_jewel_counter["enhanced damage"] += 1
+                    else:
+                        non_rune_counter[title] += 1
+
+                return rune_counter, non_rune_counter, magic_jewel_counter, rare_jewel_counter, facet_counter
+
+            # ✅ Unpacking correctly for all five values
+            just_socketed_runes, just_socketed_non_runes, just_socketed_magic, just_socketed_rare, just_socketed_facets = count_items_by_type(just_socketed)
+            just_socketed_excluding_runewords_runes, just_socketed_excluding_runewords_non_runes, just_socketed_excluding_runewords_magic, just_socketed_excluding_runewords_rare, just_socketed_excluding_runewords_facets = count_items_by_type(just_socketed_excluding_runewords)
+
+            # ✅ Sort items for output
+            sorted_just_socketed_runes = just_socketed_runes.most_common()
+            sorted_just_socketed_excluding_runewords_runes = just_socketed_excluding_runewords_runes.most_common()
+
+            # ✅ Combine non-runes, magic, rare, and facets into a single list
+            all_other_items = [
+                *(f"{item}: {count}" for item, count in just_socketed_excluding_runewords_non_runes.items()),
+                f"Misc. Magic Jewels: {just_socketed_excluding_runewords_magic['Misc. Magic Jewels']} "
+                f"({just_socketed_excluding_runewords_magic['splash']} Splash, {just_socketed_excluding_runewords_magic['attack speed']} IAS, "
+                f"{just_socketed_excluding_runewords_magic['enhanced damage']} ED; {just_socketed_excluding_runewords_magic['iassplash']} IAS/Splash, {just_socketed_excluding_runewords_magic['iased']} IAS/ED)",
+                f"Misc. Rare Jewels: {just_socketed_excluding_runewords_rare['Misc. Rare Jewels']} "
+                f"({just_socketed_excluding_runewords_rare['splash']} Splash, {just_socketed_excluding_runewords_rare['enhanced damage']} ED)",
+                *(f"Rainbow Facet ({element}): {counts['count']} ({counts['perfect']} Perfect)" for element, counts in just_socketed_excluding_runewords_facets.items())
+            ]
+
+            return (
+                format_socket_html_runes(sorted_just_socketed_runes),
+                format_socket_html_runes(sorted_just_socketed_excluding_runewords_runes),
+                format_socket_html(all_other_items)
+            )
+
+        def format_socket_html(counter_data):
+            """Formats socketed items as an HTML table or list."""
+            if isinstance(counter_data, list):  # If it's a list, format as an unordered list
+                items = "".join(f"<li>{item}</li>" for item in counter_data)
+                return f"<ul>{items}</ul>"
+
+            elif isinstance(counter_data, Counter):  # If it's a Counter, format as a table
+                rows = "".join(f"<tr><td>{item}</td><td>{count}</td></tr>" for item, count in counter_data.items())
+                return f"<table><tr><th>Item</th><th>Count</th></tr>{rows}</table>"
+
+            elif isinstance(counter_data, dict):  # If it's a dict (e.g., facet counts), format as a list
+                items = "".join(f"<li>{item}: {count['count']} ({count['perfect']} perfect)</li>" for item, count in counter_data.items())
+                return f"<ul>{items}</ul>"
+
+            return ""  # Return empty string if there's no data
+
+        def format_socket_html_runes(counter_data):
+            """Formats socketed items as an HTML table or list."""
+            if isinstance(counter_data, list):  # If it's a list of tuples (like runes), format properly
+                items = "".join(f"<li>{item}: {count}</li>" for item, count in counter_data)
+                return f"<ul>{items}</ul>"
+
+            elif isinstance(counter_data, Counter):  # If it's a Counter, format as a table
+                rows = "".join(f"<tr><td>{item}</td><td>{count}</td></tr>" for item, count in counter_data.items())
+                return f"<table><tr><th>Item</th><th>Count</th></tr>{rows}</table>"
+
+            elif isinstance(counter_data, dict):  # If it's a dict (e.g., facet counts), format as a list
+                items = "".join(f"<li>{item}: {count['count']} ({count['perfect']} perfect)</li>" for item, count in counter_data.items())
+                return f"<ul>{items}</ul>"
+
+            return ""  # Return empty string if there's no data
+
+
+
+
+
+
+        def GetSCFunFacts(filtered_characters):
+            """Generates softcore fun facts using sc_ladder.json."""
+            
+            # ✅ Extract alive characters (not dead)
+            alive_characters = [char for char in filtered_characters if not char.get("IsDead", True)]
+            undead_count = len(alive_characters)
+            character_count = len(filtered_characters)  # Total characters
+
+            # ✅ Function to generate the alive characters list
+            def GetTheLiving():
+                return "".join(
+                    f"""
+                    <div class="character-info">
+                        <div class="character-link">
+                            <a href="https://beta.pathofdiablo.com/armory?name={char.get("Name", "Unknown")}" target="_blank">
+                                {char.get("Name", "Unknown")}
+                            </a>
+                        </div>
+                        <div>Level {char.get("Stats", {}).get("Level", "N/A")}</div>
+                        <div class="hover-trigger" data-character-name="{char.get("Name", "Unknown")}"></div>
+                    </div>
+                    <div class="character">
+                        <div class="popup hidden"></div> <!-- No iframe inside initially -->
+                    </div>
+                    """ for char in alive_characters
+                )
+
+            alive_list_html = GetTheLiving()
+
+            # ✅ Function to get the top 5 characters for a given stat
+            def get_top_characters(stat_name):
+                ranked = sorted(
+                    filtered_characters,
+                    key=lambda c: c.get("Stats", {}).get(stat_name, 0) + c.get("Bonus", {}).get(stat_name, 0),
+                    reverse=True,
+                )[:5]  # Top 5
+
+                return "".join(
+                    f"""<li>&nbsp;&nbsp;&nbsp;&nbsp;
+                        <a href="https://beta.pathofdiablo.com/armory?name={char.get('Name', 'Unknown')}" target="_blank">
+                            {char.get('Name', 'Unknown')} ({char.get('Stats', {}).get(stat_name, 0) + char.get('Bonus', {}).get(stat_name, 0)})
+                        </a>
+                    </li>"""
+                    for char in ranked
+                )
+            # lists for median calculations
+            mf_values = []
+            gf_values = []
+            life_values = []
+            mana_values = []
+
+            # ✅ Get the top 5 for each stat
+            top_strength = get_top_characters("Strength")
+            top_dexterity = get_top_characters("Dexterity")
+            top_vitality = get_top_characters("Vitality")
+            top_energy = get_top_characters("Energy")
+            top_life = get_top_characters("Life")
+            top_mana = get_top_characters("Mana")
+
+            # ✅ Compute Magic Find (MF) and Gold Find (GF)
+            total_mf = 0
+            total_gf = 0
+            total_life = 0
+            total_mana = 0
+
+            for char in filtered_characters:
+                mf = char.get("Bonus", {}).get("MagicFind", 0) + \
+                    char.get("Bonus", {}).get("WeaponSetMain", {}).get("MagicFind", 0) + \
+                    char.get("Bonus", {}).get("WeaponSetOffhand", {}).get("MagicFind", 0)
+                gf = char.get("Bonus", {}).get("GoldFind", 0) + \
+                    char.get("Bonus", {}).get("WeaponSetMain", {}).get("GoldFind", 0) + \
+                    char.get("Bonus", {}).get("WeaponSetOffhand", {}).get("GoldFind", 0)
+                life = char.get("Stats", {}).get("Life", 0)
+                mana = char.get("Stats", {}).get("Mana", 0)
+
+                total_mf += mf
+                total_gf += gf
+                total_life += life
+                total_mana += mana
+
+                mf_values.append(mf)
+                gf_values.append(gf)
+                life_values.append(life)
+                mana_values.append(mana)
+
+            top_magic_find = get_top_characters("MagicFind")
+            top_gold_find = get_top_characters("GoldFind")
+
+            # ✅ Calculate averages
+            average_mf = total_mf / character_count if character_count > 0 else 0
+            average_gf = total_gf / character_count if character_count > 0 else 0
+            average_life = total_life / character_count if character_count > 0 else 0
+            average_mana = total_mana / character_count if character_count > 0 else 0
+
+            #calculate medians
+            median_mf = statistics.median(mf_values) if mf_values else 0
+            median_gf = statistics.median(gf_values) if gf_values else 0
+            median_life = statistics.median(life_values) if life_values else 0
+            median_mana = statistics.median(mana_values) if mana_values else 0
+
+            # ✅ Generate fun facts HTML
+            fun_facts_html = f"""
+        <h3 id="fun-facts">Softcore Fun Facts <a href="#softcore-fun-facts" class="anchor-link"><img src="icons/anchor.png" alt="🔗" class="anchor-icon"></a></h3>
+                <h3>{undead_count} {what_class}'s out of {character_count} have not died</h3>
+                    <button type="button" class="collapsible sets-button">
+                        <img src="icons/Special_click.png" alt="Undead Open" class="icon open-icon hidden">
+                        <img src="icons/Special.png" alt="Undead Close" class="icon close-icon">
+                    </button>
+                    <div class="content">  
+                        <div id="special">{alive_list_html}</div>
+                    </div>
+            <br>
+
+            <!-- Strength & Dexterity Row -->
+            <div class="fun-facts-row">
+                <div class="fun-facts-column">
+                    <h3>Top 5 {what_class}'s with the Most Strength:</h3>
+                    <ul>{top_strength}</ul>
+                </div>
+                <div class="fun-facts-column">
+                    <h3>Top 5 {what_class}'s with the Most Dexterity:</h3>
+                    <ul>{top_dexterity}</ul>
+                </div>
+            </div>
+
+            <!-- Vitality & Energy Row -->
+            <div class="fun-facts-row">
+                <div class="fun-facts-column">
+                    <h3>Top 5 {what_class}'s with the Most Vitality:</h3>
+                    <ul>{top_vitality}</ul>
+                </div>
+                <div class="fun-facts-column">
+                    <h3>Top 5 {what_class}'s with the Most Energy:</h3>
+                    <ul>{top_energy}</ul>
+                </div>
+            </div>
+
+            <!-- Life & Mana Row -->
+            <div class="fun-facts-row">
+                <div class="fun-facts-column">
+                    <h3>Top 5 {what_class}'s with the Most Life:</h3>
+                    <ul>{top_life}</ul>
+                    <p><strong>Average Life:</strong> {average_life:.2f} | <strong>Median Life:</strong> {median_life:.2f}</p>
+                </div>
+                <div class="fun-facts-column">
+                    <h3>Top 5 {what_class}'s with the Most Mana:</h3>
+                    <ul>{top_mana}</ul>
+                    <p><strong>Average Mana:</strong> {average_mana:.2f} | <strong>Median Mana:</strong> {median_mana:.2f}</p>
+                </div>
+            </div>
+
+            <!-- Magic Find & Gold Find Row -->
+            <div class="fun-facts-row">
+                <div class="fun-facts-column">
+                    <h3>Top 5 {what_class}'s with the Most Magic Find:</h3>
+                    <ul>{top_magic_find}</ul>
+                    <p><strong>Average Magic Find:</strong> {average_mf:.2f} | <strong>Median:</strong> {median_mf:.2f}</p>
+                </div>
+                <div class="fun-facts-column">
+                    <h3>Top 5 {what_class}'s with the Most Gold Find:</h3>
+                    <ul>{top_gold_find}</ul>
+                    <p><strong>Average Gold Find:</strong> {average_gf:.2f} | <strong>Median:</strong> {median_gf:.2f}</p>
+                </div>
+            </div>
+            """
+
+            return fun_facts_html
+
+        # Load the consolidated JSON
+        with open("sc_ladder.json", "r") as file:
+            all_characters = json.load(file)
+
+        fun_facts_html = GetSCFunFacts(filtered_characters)
+
+        def generate_maxed_skills_section(maxed_skills, all_characters):
+            section_html = ""
+            
+            # Sort skills by number of characters with 20 points
+            sorted_skills = sorted(maxed_skills.items(), key=lambda x: len(x[1]), reverse=True)
+
+            for skill_name, char_names in sorted_skills:
+                # Get full character info from all_characters
+                characters = [char for char in all_characters if char["Name"] in char_names]
+
+                # Build character display block
+                character_list_html = "".join(
+                    f"""
+                    <div class="character-info">
+                        <div class="character-link">
+                            <a href="https://beta.pathofdiablo.com/armory?name={char["Name"]}" target="_blank">
+                                {char["Name"]}
+                            </a>
+                        </div>
+                    <div>Level {char.get("Stats", {}).get("Level", "?")} {char.get("Class", "Unknown")}</div>                        <div class="hover-trigger" data-character-name="{char["Name"]}"></div>
+                    </div>
+                    <div class="character">
+                        <div class="popup hidden"></div>
+                    </div>
+                    """ for char in characters
+                )
+
+                # Collapsible block per maxed skill
+                safe_skill_name = skill_name.replace(" ", "-")
+                section_html += f"""
+                <span id="{safe_skill_name}"></span>
+                <button class="collapsible">
+                    <img src="icons/open-grey.png" alt="Open" class="icon-small open-icon hidden">
+                    <img src="icons/closed-grey.png" alt="Closed" class="icon-small close-icon">
+                    <strong>{skill_name} ({len(characters)} users)</strong>     
+                    <a href="#{safe_skill_name}" class="anchor-link">
+                        <img src="icons/anchor.png" alt="🔗" class="anchor-icon">
+                    </a>
+                </button>
+                <div class="content">
+                    {character_list_html if characters else "<p>No characters maxed this skill.</p>"}
+                </div>
+                """
+
+            # Wrap in container with section header
+            if section_html:
+                return f"""
+                <h3 id="maxed-skills">Maxed Skills
+                    <a href="#maxed-skills" class="anchor-link">
+                        <img src="icons/anchor.png" alt="🔗" class="anchor-icon">
+                    </a>
+                </h3>
+                <p>These skills have been maxed (20 points) by one or more characters.</p>
+                <button type="button" class="collapsible sets-button">
+                    <img src="icons/Special_click.png" alt="Undead Open" class="icon open-icon hidden">
+                    <img src="icons/Special.png" alt="Undead Close" class="icon close-icon">
+                </button>
+                <div class="content">  
+                    <div id="special">{section_html}</div>
+                </div>
+                """
+            else:
+                return ""
+            
+
+        # Updated HTML template
+        html_template = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <link rel="stylesheet" type="text/css" href="./css/test-css.css">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="Path of Diablo (PoD) {{ what_class }} build trends. This page includes data anaylitics and statistics for {{ what_class }} skills and equipment.">
+        <meta name="keywords" content="{meta_tag}">
+        <meta name="robots" content="index, follow">
+            <title>{{ what_class }} Analysis Report</title>
+
+        </head>
+        <body class="main special-background-{{ what_class|lower }}">
+        <div class="is-clipped">
+        <nav class="navbar is-fixed-top is-dark" style="height: 50px;">
+
+            <div class="navbar-brand">
+                <a class="is-48x48" href="https://beta.pathofdiablo.com/"><img src="icons/pod.ico" alt="Path of Diablo: Web Portal" width="48" height="48" class="is-48x48" style="height: 48px; width: 48px; margin-left:0;"></a>
+    <button class="navbar-burger burger" aria-label="menu" aria-expanded="false" data-target="podNavbar">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>            </div>
+            <div id="podNavbar" class="navbar-menu">
+                <div class="navbar-start">
+                    <a class="navbar-item" href="https://beta.pathofdiablo.com/trade-search">Trade</a>
+                    <a class="navbar-item" href="https://beta.pathofdiablo.com/servers">Servers</a>
+                    <a class="navbar-item" href="https://beta.pathofdiablo.com/ladder">Ladder</a>
+                    <a class="navbar-item" href="https://beta.pathofdiablo.com/public-games">Public Games</a>
+                    <a class="navbar-item" href="https://beta.pathofdiablo.com/runewizard">Runewizard</a>
+                    <a class="navbar-item" href="https://pathofdiablo.com/p/armory">Armory</a>
+                    <a class="navbar-item" href="https://build.pathofdiablo.com">Build Planner</a>
+                    <!--<a class="navbar-item" href="https://pathofdiablo.com/p/?live" style="width: 90px;"><span><img src="https://beta.pathofdiablo.com/images/twitchico.png"></span></a>-->
+                </div>
+                <div class="navbar-end">
+
+                    <div class="navbar-start">	
+                        <a class="navbar-item-right" href="https://beta.pathofdiablo.com/my-toons">Character Storage</a>
+                        <div class="navbar-item dropdown2">
+                            <button class="dropdown2-button">Trends History</button>
+                            <div class="dropdown2-content">
+                                <a href="https://trends.pathofdiablo.com/Home.html">Current</a>
+                                <!--  <a href="https://trends.pathofdiablo.com/Season/14/April/Home">S14</a> -->
+                                <div class="dropdown2-item dropdown-sub">
+                                    <a class="dropdown-sub-button">S13</a>
+                                    <div class="dropdown-sub-content">
+                                        <a href="https://trends.pathofdiablo.com/Season/13/July/Home">July</a>
+                                        <a href="https://trends.pathofdiablo.com/Season/13/June/Home">June</a>
+                                        <a href="https://trends.pathofdiablo.com/Season/13/May/Home">May</a>
+                                        <a href="https://trends.pathofdiablo.com/Season/13/April/Home">April</a>
+                                        <a href="https://trends.pathofdiablo.com/Season/13/March/Home.html">March</a>
+                                        <a href="https://trends.pathofdiablo.com/Season/13/February/Home.html">February</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        </nav>  
+    
+        <div class="hamburger hamburger2" onclick="toggleMenu()">
+            <div class="line"></div>
+            <div class="line"></div>
+            <div class="line"></div>
+        </div>
+        <div class="top-buttons">
+            <a href="Home" class="top-button home-button" onclick="setActive('Home')"></a>
+            <a href="#" id="SC_HC" class="top-button"> </a>
+            <a href="Amazon" id="Amazon" class="top-button amazon-button"></a>
+            <a href="Assassin" id="Assassin" class="top-button assassin-button"></a>
+            <a href="Barbarian" id="Barbarian" class="top-button barbarian-button"></a>
+            <a href="Druid" id="Druid" class="top-button druid-button"></a>
+            <a href="Necromancer" id="Necromancer" class="top-button necromancer-button"></a>
+            <a href="Paladin" id="Paladin" class="top-button paladin-button"></a>
+            <a href="Sorceress" id="Sorceress" class="top-button sorceress-button"></a>
+            <a href="https://github.com/qordwasalreadytaken/pod-stats/blob/main/README.md" class="top-button about-button" target="_blank"></a>
+        </div>
+<div page-intro-class>
+            <h1>{{ what_class }} Softcore Skill Distribution </h1>
+            <div class="summary-container">
+            {intro_summary}
+            <p class="indented-skills"> </p>
+
+
+<!--        <h2>Detailed Grouping Information, Ordered Highest to Lowest %</h2>-->
+
+        {% for clusters, data in clusters.items() %}
+        <!--<h2>{{ data['label'] }}</h2>
+        <p class="indented-skills"><strong>Other Skills:<br></strong> {{ data['other_skills'] }}</p> -->
+        <div class="class-intro">
+        <div id="skills" class="skills-container">
+            <div class="column">
+                <ul id="most-popular-skills">
+                    <h2>{{ data['label'] }}</h2>
+                </ul>
+            </div>
+<!--            <div class="column">
+                <ul id="other-skills">
+                    <h2>Other common skills in this group:</h2> {{ data['other_skills'] }}
+                </ul>
+            </div> -->
+        </div>
+
+    <button type="button" class="collapsible small-collapsible">
+        <img src="icons/open.png" alt="Open" class="icon-small open-icon hidden">
+        <img src="icons/closed.png" alt="Close" class="icon-small close-icon">
+                <strong>All Skills</strong></button>
+                <div class="content">
+                    <div>{{ data['remaining_skills_with_icons'] }}</div>
+                </div>
+
+                <button type="button" class="collapsible small-collapsible">
+        <img src="icons/open.png" alt="Open" class="icon-small open-icon hidden">
+        <img src="icons/closed.png" alt="Close" class="icon-small close-icon">
+                <strong>Most Common Equipment:</strong></button>
+                <div class="content">
+                    <div>{{ data['top_equipment'] }}</div>
+                </div>
+<!--            
+                <button type="button" class="collapsible small-collapsible">
+        <img src="icons/open.png" alt="Open" class="icon-small open-icon hidden">
+        <img src="icons/closed.png" alt="Close" class="icon-small close-icon">
+                <strong>ALL Equipment:</strong></button>
+                <div class="content">
+                    <div>{{ data['equipment_counts'] }}</div>
+                </div>
+-->
+            <button type="button" class="collapsible small-collapsible">
+        <img src="icons/open.png" alt="Open" class="icon-small open-icon hidden">
+        <img src="icons/closed.png" alt="Close" class="icon-small close-icon">
+            <strong>{{ data['character_count'] }} Characters in this cluster:</strong>
+        </button>
+        <div class="content">
+{% for character in data['characters'] %}
+<!--
+<div class="character-container {% if loop.index is even %}char1{% else %}char2{% endif %}">
+-->
+<div class="character-container char2" id="{{ character['name'] }}">
+    <div class="character-info">
+        <div class="character-link"><strong>Name: <a href="https://beta.pathofdiablo.com/armory?name={{ character['name'] }}" target="_blank">
+                {{ character['name'] }}
+            </a></strong></div>
+                <strong>Level: {{ character['level'] }}</strong>
+                <a href="#{{ character['name'] }}" class="anchor-link">
+                    <img src="icons/anchor.png" alt="🔗" class="anchor-icon">
+                </a>
+
+        <div class="hover-trigger" data-character-name="{{ character['name'] }}">
+            <!-- Armory Quickview -->
+        </div>
+    </div>
+
+    <div class="character">
+        <div class="popup hidden"></div> <!-- No iframe inside initially -->
+    </div>
+
+    <p><strong>Skills:<br></strong> {{ character['skills'] }}</p>
+    <p><strong>Equipment:<br></strong> {{ character['equipment'] }}</p>
+    <p><strong>Mercenary:<br></strong> {{ character['mercenary'] }} - {{ character['mercenary_equipment'] }}</p>
+
+    <div class="character-section" data-character-name="{{ character['name'] }}"></div>
+</div>
+<hr color="#141414">
+<br>
+{% endfor %}
+            <br>
+            </div>
+            </div>
+        <!--    <hr width="90%"> -->
+            <br>
+            {% endfor %}
+            <h3>Top 5 Most Popular {{ what_class }} Skills:</h3>
+            <ul>
+            {% for skill, usage in top_5_most_used_skills.items() %}
+                <li class="usage-label"
+                    data-usage='{{ historical_usage.get(skill, {}) | tojson }}'>
+                    {{ skill }}: {{ usage }}
+                </li>
+            {% endfor %}
+            </ul>
+
+            <h3>Top 5 Least Popular {{ what_class }} Skills:</h3>
+            <ul>
+            {% for skill, usage in bottom_5_least_used_skills.items() %}
+                <li class="usage-label"
+                    data-usage='{{ historical_usage.get(skill, {}) | tojson }}'>
+                    {{ skill }}: {{ usage }}
+                </li>
+            {% endfor %}
+            </ul>
+            <br>
+            <!-- Maxed skill list below -->
+            {all_maxed}
+            <hr>
+            <br>
+<!--                           {{ full_summary_output }} -->
+            </div>
+            </div>
+            <br><br>
+                    <!-- Embed the Plotly pie chart -->
+            <div>
+                <img src="charts/{{ what_class }}-clusters_distribution_pie.png" alt="{{ what_class }} Skills Distribution">
+            </div> 
+            <hr>
+            <h1>Equipment and item details for {{ what_class}}</h1>
+            <button type="button" class="collapsible runewords-button">
+                <img src="icons/Runewords_click.png" alt="Runewords Open" class="icon open-icon hidden">
+                <img src="icons/Runewords.png" alt="Runewords Close" class="icon close-icon">
+            <!--    <strong>Runewords</strong> -->
+            </button>
+            <div class="content">
+                <div id="runewords" class="container">
+                    <div class="column">
+                        <h3>Most Used Runewords:</h3>
+                        <ul id="most-popular-runewords">
+                            {most_popular_runewords}
+                        </ul>
+                    </div>
+                    <div class="column">
+                        <h3>Least Used Runewords:</h3>
+                        <ul id="least-popular-runewords">
+                            {least_popular_runewords}
+                        </ul>
+                    </div>
+                </div>
+
+
+                <button type="button" class="collapsible small-collapsible">
+                    <img src="icons/open.png" alt="All Runewords Open" class="icon-small open-icon hidden">
+                    <img src="icons/closed.png" alt="Runewords Close" class="icon-small close-icon">
+                    <strong>ALL Runewords</strong>
+                </button>
+
+                <div class="content">
+                    <div id="allrunewords">
+                        {all_runewords}
+                    </div>
+                </div>
+            </div>
+
+            <br>
+            <button type="button" class="collapsible uniques-button">
+                <img src="icons/Uniques_click.png" alt="Uniques Open" class="icon open-icon hidden">
+                <img src="icons/Uniques.png" alt="Uniques Close" class="icon close-icon">
+            <!--    <strong>Uniques</strong>-->
+            </button>    
+            <div class="content">   
+                <div id="uniques" class="container">
+                    <div class="column">
+                        <h3>Most Used Uniques:</h3>
+                        <ul id="most-popular-uniques">
+                            {most_popular_uniques}
+                        </ul>
+                    </div>
+                    <div class="column">
+                        <h3>Least Used Uniques:</h3>
+                        <ul id="least_popular_uniques">
+                            {least_popular_uniques}
+                        </ul>
+                    </div>
+                </div>
+                <button type="button" class="collapsible small-collapsible">
+                    <img src="icons/open.png" alt="All Uniques Open" class="icon-small open-icon hidden">
+                    <img src="icons/closed.png" alt="Uniques Close" class="icon-small close-icon">
+                    <strong>ALL Uniques</strong>
+                </button>
+
+                <div class="content">
+                    <div id="alluniques">
+                        {all_uniques}
+                    </div>
+                </div>
+
+            </div>
+
+            <br>
+            <button type="button" class="collapsible sets-button">
+                <img src="icons/Sets_click.png" alt="Sets Open" class="icon open-icon hidden">
+                <img src="icons/Sets.png" alt="Sets Close" class="icon close-icon">
+            <!--    <strong>Sets</strong>-->
+            </button>  
+            <div class="content">  
+                <div id="sets" class="container">
+                    <div class="column">
+                        <h3>Most Used Set Items:</h3>
+                        <ul id="most-popular-set-items">
+                            {most_popular_set_items}
+                        </ul>
+                    </div>
+                    <div class="column">
+                        <h3>Least Used Set Items:</h3>
+                        <ul id="least_popular_set_items">
+                            {least_popular_set_items}
+                        </ul>
+                    </div>
+                </div>
+                <button type="button" class="collapsible small-collapsible">
+                    <img src="icons/open.png" alt="All Set Open" class="icon-small open-icon hidden">
+                    <img src="icons/closed.png" alt="Set Close" class="icon-small close-icon">
+                    <strong>ALL Set</strong>
+                </button>
+
+                <div class="content">
+                    <div id="allset">
+                        {all_set}
+                    </div>
+                </div>
+            </div>
+            <br>
+                    <h2>Synth reporting</h2>
+<h2 id="synth-items">
+    {synth_user_count} Characters with Synthesized items equipped
+    <a href="#synth-items" class="anchor-link">
+        <img src="icons/anchor.png" alt="🔗" class="anchor-icon">
+    </a>
+</h2>
+                    <h3>This is base synthesized items</h3>
+            <button type="button" class="collapsible sets-button">
+                <img src="icons/Special_click.png" alt="Synth Open" class="icon open-icon hidden">
+                <img src="icons/Special.png" alt="Synth Close" class="icon close-icon">
+            <!--    <strong>Sets</strong>-->
+            </button>  
+            <div class="content">  
+                    <div id="special">
+                        {all_synth}
+                    </div>
+                </div>
+
+<h2 id="synth-from">
+    {synth_source_user_count} Synthesized FROM listings
+    <a href="#synth-from" class="anchor-link">
+        <img src="icons/anchor.png" alt="🔗" class="anchor-icon">
+    </a>
+</h2>
+                    <h3>This shows where propertied an item are showing up in other items. If you wanted to see where the slow from Kelpie or the Ball light from Ondal's had popped up, this is where to look </h3>
+            <button type="button" class="collapsible sets-button">
+                <img src="icons/Special_click.png" alt="Synth Open" class="icon open-icon hidden">
+                <img src="icons/Special.png" alt="Synth Close" class="icon close-icon">
+            <!--    <strong>Sets</strong>-->
+            </button>  
+            <div class="content">  
+                    <div id="special">
+                        {synth_source_data}
+                    </div>
+                </div>
+
+
+                    <br>
+
+<h2 id="craft-reporting">Craft reporting
+    <a href="#craft-reporting" class="anchor-link">
+        <img src="icons/anchor.png" alt="🔗" class="anchor-icon">
+    </a>
+</h2>        
+                    <h3>{craft_user_count} Characters with crafted items equipped</h3>
+
+            <button type="button" class="collapsible sets-button">
+                <img src="icons/Special_click.png" alt="Synth Open" class="icon open-icon hidden">
+                <img src="icons/Special.png" alt="Synth Close" class="icon close-icon">
+            <!--    <strong>Sets</strong>-->
+            </button>  
+            <div class="content">  
+                    <div id="special">
+                        {all_crafted}
+                    </div>
+                </div>
+
+            <br>
+
+            <br>
+<h2 id="magic-reporting">Magic reporting
+    <a href="#magic-reporting" class="anchor-link">
+        <img src="icons/anchor.png" alt="🔗" class="anchor-icon">
+    </a>
+</h2>
+                    <h3>{magic_user_count} Characters with Magic items equipped</h3>
+
+            <button type="button" class="collapsible sets-button">
+                <img src="icons/Special_click.png" alt="Synth Open" class="icon open-icon hidden">
+                <img src="icons/Special.png" alt="Synth Close" class="icon close-icon">
+            <!--    <strong>Sets</strong>-->
+            </button>  
+            <div class="content">  
+                    <div id="special">
+                        {all_magic}
+                    </div>
+                </div>
+
+            <br>
+
+<h2 id="rare-reporting">Rare reporting
+    <a href="#rare-reporting" class="anchor-link">
+        <img src="icons/anchor.png" alt="🔗" class="anchor-icon">
+    </a>
+</h2>
+                    <h3>{rare_user_count} Characters with rare items equipped</h3>
+
+            <button type="button" class="collapsible sets-button">
+                <img src="icons/Special_click.png" alt="Synth Open" class="icon open-icon hidden">
+                <img src="icons/Special.png" alt="Synth Close" class="icon close-icon">
+            <!--    <strong>Sets</strong>-->
+            </button>  
+            <div class="content">  
+                    <div id="special">
+                        {all_rare}
+                    </div>
+                </div>
+
+            <br>
+
+<h2 id="socketable-reporting">Socketable reporting
+    <a href="#socketable-reporting" class="anchor-link">
+        <img src="icons/anchor.png" alt="🔗" class="anchor-icon">
+    </a>
+</h2>
+                    <h3>What are people puting in sockets</h3>
+
+            <button type="button" class="collapsible sets-button">
+                <img src="icons/Special_click.png" alt="Synth Open" class="icon open-icon hidden">
+                <img src="icons/Special.png" alt="Synth Close" class="icon close-icon">
+            <!--    <strong>Sets</strong>-->
+            </button>  
+            <div class="content">  
+                    <h2>Socketed Runes Count</h2>
+                    <h3>Includes Only Character Data, No Mercs</h3>
+                <div id="special"  class="container">
+            <br>
+                    <div class="column">
+                        <!-- Left Column -->
+                            <h2>Most Common Runes <br>(Including Runewords)</h2>
+                        <ul id="sorted_just_socketed_runes"
+                            {sorted_just_socketed_runes}
+                        </ul>
+                        </div>
+
+                        <!-- Right Column -->
+                        <div class="column">
+                            <h2>Most Common Runes <br>(Excluding Runewords)</h2>
+                        <ul id="sorted_just_socketed_excluding_runewords_runes">
+                            {sorted_just_socketed_excluding_runewords_runes}
+                        </ul>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h2>Other Items Found in Sockets</h2>
+                    <h3>Includes Only Character Data, No Mercs</h3>
+                        {all_other_items}
+                    </div>
+                </div>
+<hr>
+                                    <h1>Mercenary reporting</h1>
+<h3 id="merc-equipment">
+    Mercenary counts and Most Used Runewords, Uniques, and Set items equipped
+    <a href="#merc-equipment" class="anchor-link">
+        <img src="icons/anchor.png" alt="🔗" class="anchor-icon">
+    </a>
+</h3>
+
+                    <button type="button" class="collapsible">
+                        <img src="icons/Merc_click.png" alt="Merc Details Open" class="icon open-icon hidden">
+                        <img src="icons/Merc.png" alt="Merc Details Close" class="icon close-icon">
+            <!--            <strong>Mercenary Details</strong> -->
+                    </button>
+                    <div class="content">
+                    <div id="mercequips">
+                        {html_output}
+                    </div>
+                    </div>
+            
+            <hr>
+            {{ fun_facts_html }}
+            <hr>
+            <!-- Embed the Plotly scatter plot -->
+            <div>
+                <img src="charts/{{ what_class }}-clusters_with_avg_points.png" alt="{{ what_class }} Skill Clusters Scatter Plot">
+            </div>
+            <button onclick="topFunction()" id="backToTopBtn" class="back-to-top"></button>
+
+            <div class="footer">
+            <p>PoD class data current as of {{ timeStamp }}</p>
+            </div>            
+
+
+
+<script>
+// Collapsible elemets
+var coll = document.getElementsByClassName("collapsible");
+for (var i = 0; i < coll.length; i++) {
+    coll[i].addEventListener("click", function() {
+        this.classList.toggle("active");
+        var content = this.nextElementSibling;
+        var openIcon = this.querySelector("img.icon[alt='Open']");
+        var closeIcon = this.querySelector("img.icon[alt='Close']");
+
+        if (content.style.display === "block") {
+            content.style.display = "none";
+            openIcon.classList.remove("hidden");
+            closeIcon.classList.add("hidden");
+        } else {
+            content.style.display = "block";
+            openIcon.classList.add("hidden");
+            closeIcon.classList.remove("hidden");
+        }
+    });
+}
+
+
+//Back to top button
+var backToTopBtn = document.getElementById("backToTopBtn");
+
+// When the user scrolls down 20px from the top of the document, show the button
+window.onscroll = function() {scrollFunction()};
+
+function scrollFunction() {
+if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+backToTopBtn.style.display = "block";
+} else {
+backToTopBtn.style.display = "none";
+}
+}
+
+// When the user clicks on the button, scroll to the top of the document
+function topFunction() {
+document.body.scrollTop = 0; // For Safari
+document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+}
+
+//Trends toolbar
+// Trends toolbar
+function toggleMenu() {
+    const navMenu = document.querySelector('.top-buttons');
+    navMenu.classList.toggle('show');
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    const scHcButton = document.getElementById("SC_HC");
+    const currentUrl = window.location.href;
+    const filename = currentUrl.split("/").pop(); // Get the last part of the URL
+
+    // Check if the current page is Hardcore or Softcore
+    const isHardcore = filename.startsWith("hc");
+
+    // Update button appearance based on current mode
+    if (isHardcore) {
+        scHcButton.classList.add("hardcore");
+        scHcButton.classList.remove("softcore");
+    } else {
+        scHcButton.classList.add("softcore");
+        scHcButton.classList.remove("hardcore");
+    }
+
+    // Update background image based on mode
+    updateButtonImage(isHardcore);
+
+    // Add click event to toggle between SC and HC pages
+    scHcButton.addEventListener("click", function () {
+        let newUrl;
+
+        if (isHardcore) {
+            // Convert HC -> SC (remove "hc" from filename)
+            newUrl = currentUrl.replace(/hc(\w+)$/, "$1"); // Remove "hc"
+        } else {
+            // Convert SC -> HC (prepend "hc" to the filename)
+            newUrl = currentUrl.replace(/\/(\w+)$/, "/hc$1"); // Prepend "hc"
+        }
+
+        // Redirect to the new page
+        if (newUrl !== currentUrl) {
+            window.location.href = newUrl;
+        }
+    });
+
+    // Function to update button background image
+    function updateButtonImage(isHardcore) {
+        if (isHardcore) {
+            scHcButton.style.backgroundImage = "url('icons/Hardcore_click.png')";
+        } else {
+            scHcButton.style.backgroundImage = "url('icons/Softcore_click.png')";
+        }
+    }
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    const currentPage = window.location.pathname.split("/").pop(); // Get current page filename
+    const menuItems = document.querySelectorAll(".top-button");
+
+    menuItems.forEach(item => {
+        const itemPage = item.getAttribute("href");
+        if (itemPage && currentPage === itemPage) {
+            item.classList.add("active");
+        }
+    });
+});
+
+
+document.addEventListener("DOMContentLoaded", function () {
+const currentPage = window.location.pathname.split("/").pop(); // Get current page filename
+const menuItems = document.querySelectorAll(".top-button");
+
+menuItems.forEach(item => {
+const itemPage = item.getAttribute("href");
+if (itemPage && currentPage === itemPage) {
+item.classList.add("active");
+}
+});
+});
+
+//Armory pop up
+document.addEventListener("DOMContentLoaded", function () {
+let activePopup = null;
+
+document.querySelectorAll(".hover-trigger").forEach(trigger => {
+trigger.addEventListener("click", function (event) {
+event.stopPropagation();
+const characterName = this.getAttribute("data-character-name");
+
+// Close any open popup first
+if (activePopup) {
+activePopup.classList.remove("active");
+activePopup.innerHTML = ""; // Remove iframe for memory efficiency
+activePopup = null;
+}
+
+// Find the associated popup container
+const popup = this.closest(".character-info").nextElementSibling.querySelector(".popup");
+
+// If this popup was already active, just close it
+if (popup === activePopup) {
+return;
+}
+
+// Create an iframe and set its src
+const iframe = document.createElement("iframe");
+iframe.src = `./armory/video_component.html?charName=${encodeURIComponent(characterName)}`;
+iframe.setAttribute("id", "popupFrame");
+
+// Add iframe to the popup
+popup.appendChild(iframe);
+popup.classList.add("active");
+
+// Set this popup as the active one
+activePopup = popup;
+});
+});
+
+// Close the popup when clicking anywhere outside
+document.addEventListener("click", function (event) {
+if (activePopup && !activePopup.contains(event.target)) {
+activePopup.classList.remove("active");
+activePopup.innerHTML = ""; // Remove iframe to free memory
+activePopup = null;
+}
+});
+});
+
+
+//PoD nav buttons
+document.addEventListener('DOMContentLoaded', () => {
+    const burger = document.querySelector('.navbar-burger');
+    const menu = document.querySelector('.navbar-menu');
+
+    burger.addEventListener('click', () => {
+        menu.classList.toggle('is-active');
+        burger.classList.toggle('is-active');
+    });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const dropdownButton = document.querySelector('.dropdown2-button');
+    const dropdownContent = document.querySelector('.dropdown2-content');
+
+    dropdownButton.addEventListener('click', (event) => {
+        event.stopPropagation(); // Prevents clicks from propagating to other elements
+        dropdownContent.classList.toggle('is-active'); // Toggles the dropdown visibility
+    });
+
+    // Close the dropdown if you click anywhere outside it
+    document.addEventListener('click', () => {
+        if (dropdownContent.classList.contains('is-active')) {
+            dropdownContent.classList.remove('is-active');
+        }
+    });
+});
+
+
+//Anchor in place fix
+// Expand collapsibles and scroll to anchor
+function scrollWithOffset(el, offset = -50) {
+    const y = el.getBoundingClientRect().top + window.pageYOffset + offset;
+    window.scrollTo({ top: y, behavior: 'smooth' });
+}
+
+function expandToAnchor(anchorId) {
+    console.log("expandToAnchor called with:", anchorId);
+    const target = document.getElementById(anchorId);
+    if (!target) return;
+
+    // Step 1: Collect all parent .content elements that need expanding
+    const stack = [];
+    let el = target;
+    while (el) {
+        if (el.classList?.contains('content')) {
+            stack.unshift(el); // add to beginning to expand outermost first
+        }
+        el = el.parentElement;
+    }
+
+    // Step 2: Expand each .content section in order
+    for (const content of stack) {
+        const button = content.previousElementSibling;
+        if (button?.classList.contains('collapsible')) {
+            button.classList.add('active');
+            content.style.display = "block";
+
+            const openIcon = button.querySelector("img.open-icon");
+            const closeIcon = button.querySelector("img.close-icon");
+            if (openIcon) openIcon.classList.add("hidden");
+            if (closeIcon) closeIcon.classList.remove("hidden");
+        }
+    }
+
+    // Step 3: Delay scroll until DOM has reflowed
+    setTimeout(() => {
+        console.log("scrolling to:", target.id);
+        scrollWithOffset(target);
+    }, 250); // Adjust if necessary
+}
+
+// Handle clicks on .anchor-link elements
+document.addEventListener('DOMContentLoaded', () => {
+    // Handle clicks on .anchor-link elements
+    document.querySelectorAll('.anchor-link, a[href^="#"]').forEach(link => {
+        link.addEventListener('click', function (event) {
+            event.preventDefault(); // Prevent default anchor behavior
+            const anchorId = this.getAttribute('href').substring(1);
+            const fullUrl = `${window.location.origin}${window.location.pathname}#${anchorId}`;
+
+            navigator.clipboard.writeText(fullUrl); // Copy full link to clipboard
+            history.pushState(null, '', `#${anchorId}`); // Update URL without page reload
+            expandToAnchor(anchorId); // Expand and scroll
+        });
+    });
+
+    // On initial load with hash
+    if (window.location.hash) {
+        const anchorId = window.location.hash.substring(1);
+        // Wait a bit for collapsibles/content to render
+        setTimeout(() => {
+            expandToAnchor(anchorId);
+        }, 200);
+    }
+});
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<canvas id="tooltipChart" width="350" height="160" 
+        style="position:absolute;display:none;z-index:9999;
+               background-color:white;color:black;">
+</canvas>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const canvas = document.getElementById('tooltipChart');
+  const ctx = canvas.getContext('2d');
+  let chart;
+
+  document.querySelectorAll('.usage-label').forEach(label => {
+    label.addEventListener('mouseenter', e => {
+      const data = JSON.parse(label.dataset.usage || '{}');
+      const preferredOrder = ["March", "April", "May", "June", "July", "August"];
+      const labels = preferredOrder.filter(month => data.hasOwnProperty(month));
+      const values = labels.map(label => parseInt(data[label]));
+
+      if (chart) chart.destroy();
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+            datasets: [{
+            label: '                                                                                                                   ',  // suppress legend label
+            data: values,
+            borderColor: '#f97316',         // line color (orange)
+            backgroundColor: 'transparent', // make sure no fill color
+            fill: false,
+            pointRadius: 3,
+            tension: 0.3
+            }]
+        },
+        options: {
+            layout: {
+                padding: {
+                    right: 12,  // prevent cut-off on the right
+                    top: 6
+                }
+                },
+            responsive: false,
+            plugins: {
+                legend: {
+                    display: false  // ← This removes the colored box and any label space
+                },
+                title: {
+                    display: true,
+                    text: label.textContent + ' Usage Over Time',
+                    color: '#000',
+                    font: { size: 14, weight: 'bold' }
+                }
+                
+            },
+            scales: {
+                x: {
+                ticks: { color: '#000' },
+                grid: { color: '#ccc' }
+                },
+                y: {
+                ticks: { color: '#000' },
+                grid: { color: '#ccc' },
+                beginAtZero: true
+                }
+            }
+        }
+      });
+
+      canvas.style.left = (e.pageX + 10) + 'px';
+      canvas.style.top = (e.pageY - 80) + 'px';
+      canvas.style.display = 'block';
+    });
+
+    label.addEventListener('mouseleave', () => {
+      canvas.style.display = 'none';
+    });
+  });
+});
+</script>
+
+
+
+
+        </body>
+        </html>
+        """
+
+        def analyze_mercenaries(filtered_characters):
+            mercenary_counts = Counter()
+            mercenary_equipment = defaultdict(lambda: defaultdict(Counter))
+            mercenary_names = Counter()
+
+            for char_data in filtered_characters:
+                if not isinstance(char_data, dict):
+                    print(f"Skipping unexpected data format: {char_data}")
+                    continue  # Skip invalid entries
+
+                mercenary = char_data.get("MercenaryType")
+                if mercenary:
+                    readable_mercenary, _ = map_readable_names(mercenary, "")
+                    mercenary_counts[readable_mercenary] += 1
+
+                    merc_name = char_data.get("MercenaryName", "Unknown")
+                    mercenary_names[merc_name] += 1
+
+                    for item in char_data.get("MercenaryEquipped", []):
+                        worn_category = item.get("Worn", "Unknown")
+                        readable_mercenary, readable_worn = map_readable_names(mercenary, worn_category)
+                        title = item.get("Title", "Unknown")
+                        mercenary_equipment[readable_mercenary][readable_worn][title] += 1
+
+            return mercenary, mercenary_counts, mercenary_equipment, mercenary_names
+
+    #        output_file = "all_mercenary_report.html"
+
+        # Function to generate the HTML report
+        def generate_mercenary_report(filtered_characters):
+            _, mercenary_counts, mercenary_equipment, mercenary_names = analyze_mercenaries(filtered_characters)  # Ignore first return value
+
+            html_output = "<p><h2>Mercenary Analysis and Popular Equipment</h2></p>"
+
+            # Mercenary type counts
+            html_output += "<p><h3>Mercenary Type Counts</h3></p><ul>"
+            for mercenary, count in mercenary_counts.items():
+                html_output += f"<li>{mercenary}: {count}</li>"
+            html_output += "</ul>"
+
+            # ✅ This now works!
+            html_output += "<h3>Most Common Mercenary Names</h3><ul>"
+            for name, count in mercenary_names.most_common(10):
+                html_output += f"<li>{name}: {count}</li>"
+            html_output += "</ul>"
+
+            # Popular Equipment by Mercenary Type
+            html_output += "<p><h3>Popular Equipment by Mercenary Type</h3></p>"
+            for mercenary, categories in mercenary_equipment.items():
+                html_output += f"<div class='row'><p><strong>{mercenary}</strong></p>"
+                for worn_category, items in categories.items():
+                    html_output += f"<div class='merccolumn'><strong>Most Common {worn_category}s:</strong>"
+                    html_output += "<ul>"
+                    top_items = items.most_common(15)  # Get the top 10 items
+                    for title, count in top_items:
+                        html_output += f"<li>{title}: {count}</li>"
+                    html_output += "</ul></div>"
+                html_output += "</div>"
+
+            return html_output
+
+        # Load the consolidated JSON file
+        with open("sc_ladder.json", "r") as file:
+            all_characters = json.load(file)
+
+        # Generate the report
+        html_output = generate_mercenary_report(filtered_characters)
+
+        def load_usage_history(csv_path):
+            import csv
+            usage_history = {}
+            with open(csv_path, newline='', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    if row["Type"] == "Skill" and row["Class"]:
+                        name = row["Name"]
+                        snapshots = {k: row[k] for k in row if k not in {"Type", "Class", "Name"}}
+                        usage_history[name] = snapshots
+            return usage_history
+
+        historical_usage = load_usage_history("sc-usage-over-time.csv")
+
+        def generate_hist_items(skills_dict, usage_history):
+            html = ""
+            for skill, count in skills_dict.items():
+                snapshots = usage_history.get(skill, {})
+                data_usage = f"data-usage='{json.dumps(snapshots)}'" if snapshots else ""
+                html += f"<li class='usage-label' {data_usage}>{skill}: {count}</li>\n"
+            return html
+
+        # Assuming df is your DataFrame and skill_columns contains the column names for the skills
+
+        # Calculate the total usage of each skill across all clusters
+        total_skill_usage = df[skill_columns].sum()
+
+        # Sort skills by total usage in descending order
+        most_used_skills = total_skill_usage.sort_values(ascending=False)
+
+        # Sort skills by total usage in ascending order
+        least_used_skills = total_skill_usage.sort_values(ascending=True)
+
+        # Extract the top 5 most used skills
+        top_5_most_used_skills = most_used_skills.head(5)
+
+        # Extract the bottom 5 least used skills
+        bottom_5_least_used_skills = least_used_skills.head(5)
+
+        # Load your usage-over-time data from the CSV
+        usage_history = load_usage_history("sc-usage-over-time.csv")
+        # Use the same function to generate both sets of HTML list items
+        top_skills_html = generate_hist_items(top_5_most_used_skills, usage_history)
+        bottom_skills_html = generate_hist_items(bottom_5_least_used_skills, usage_history)
+
+
+        # Calculate the percentage of characters that have invested in each skill within the cluster
+        skill_percentages = df[skill_columns].astype(bool).groupby(df['Cluster']).mean() * 100
+
+        # Identify the top skills per cluster with their average points and percentages
+        top_skills_with_avg_and_percent = skill_averages.apply(lambda x: [(skill, round(x[skill], 2), round(skill_percentages.loc[x.name, skill], 2)) for skill in x.nlargest(howmany_skills).index], axis=1)
+
+
+        # Define skill weights
+        skill_weights = {
+            ### Amazon
+            ### Assassin
+            "Dragon Talon": 100,
+            "Dragon Flight": 30,
+            "Mind Blast": 100, 
+            "Psychic Hammer": 100,
+            ### Barb
+            "Bash": 50,
+            "Cleave": 50,
+            "Whirlwind": 100,
+            "Double Swing": 50,
+            "War Cry": 70,
+            ### Druid
+            "Rabies": 50,
+            "Fury": 70,
+            "Fire Claws": 70,
+            ### Necro
+            "Hemorrhage": 70,
+            "Deadly Poison": 70,
+            "Corpse Explosion": 50,
+            ### Paladin
+            "Fist of the Heavens":80,
+            "Zeal": 70,
+            "Dashing Strike": 70,
+            "Smite": 70,
+            "Charge": 70,
+            "Holy Bolt": 70,
+            ### Sorceress
+            "Telekinesis": 50,
+            "Thunder Storm": 80,
+            "Lightning Surge": 100,
+            "Nova": 50,
+            "Charged Bolt": 100,
+            "Blizzard": 100,
+            "Frigerate": 100,
+            "Freezing Pulse": 100,
+            "Frozen Orb": 100,
+            "Frost Nova": 50,
+            "Hydra": 100,
+            "Meteor": 100,
+            "Enflame": 100,
+            "Immolate": 50,
+            "Inferno": 80
+        }
+
+        # Define your existing top_skills_with_avg_and_percent
+        top_skills_with_avg_and_percent = skill_averages.apply(
+            lambda x: [(skill, round(x[skill], 2), round(skill_percentages.loc[x.name, skill], 2)) 
+                    for skill in x.nlargest(howmany_skills).index], axis=1)
+
+        # Sort skills by weights immediately after defining top_skills_with_avg_and_percent
+        top_skills_with_avg_and_percent = top_skills_with_avg_and_percent.apply(
+            lambda skill_list: sorted(skill_list, key=lambda skill: -skill_weights.get(skill[0], 0))
+        )
+
+        summary_label = ""
+        summaries = []
+        
+        def generate_summary(clusters, class_name):
+            skill_weights = {
+                "Telekinesis": 5,
+                "Thunder Storm": 8,
+                "Lightning Surge": 10,
+                "Nova": 5,
+                "Charged Bolt": 10,
+                "Blizzard": 10,
+                "Frigerate": 10,
+                "Freezing Pulse": 10,
+                "Frozen Orb": 10,
+                "Frost Nova": 5,
+                "Hydra": 10,
+                "Meteor": 10,
+                "Enflame": 10
+            }
+
+            summaries = []
+
+            for cluster, data in clusters.items():
+                cluster_percentage = data["character_count"] / sum(c["character_count"] for c in clusters.values()) * 100
+                top_skills = data["label"].split("<br>")  # Extract skills
+
+                # Assign weights & sort by importance
+                weighted_skills = sorted(
+                    top_skills, 
+                    key=lambda skill: skill_weights.get(skill.split()[0], 1), 
+                    reverse=True
+                )
+
+                # Format the summary
+                summary = f"{cluster_percentage:.2f}% of {class_name}s favor " + ", ".join(weighted_skills)
+                summaries.append((cluster_percentage, summary))
+
+            return summaries
+
+#        data_folder = "sc/ladder-all"
+
+        # Gather data for the report
+        clusters = {}
+        for cluster, group in df.groupby('Cluster'):
+            sorted_group = group.sort_values(by='Level', ascending=False)  # Sort by level descending
+            character_count = len(sorted_group)
+            cluster_percentage = cluster_counts[cluster]
+            equipment_counts = {}
+
+            # Later processing (example, adjust as needed)
+            for row in sorted_group.itertuples():
+                equipment_list = row.Equipment.split(", ")
+                for item in equipment_list:
+                    if item:
+                        worn, title_count = item.split(": ", 1)
+                        if " x" in title_count:
+                            title, count = title_count.split(" x", 1)
+                            count = int(count)
+                        else:
+                            title = title_count
+                            count = 1
+
+                        if worn not in equipment_counts:
+                            equipment_counts[worn] = {}
+                        if title in equipment_counts[worn]:
+                            equipment_counts[worn][title] += count
+                        else:
+                            equipment_counts[worn][title] = count  # Initialize with real count
+
+
+#            print("🔹 Original Equipment Counts:")
+#            pp.pprint(equipment_counts)
+
+            # Extract character file paths for this cluster
+            cluster_files = [f"{row.Class.lower()}/{row.Name}.json" for row in sorted_group.itertuples()]
+            cluster_files = [path for path in cluster_files if os.path.exists(path)]  # Filter only existing files
+
+            # Get mercenary data **just for this cluster**
+            _, mercenary_counts, mercenary_equipment, mercenary_names = analyze_mercenaries(filtered_characters)
+
+            # Generate HTML report for mercenaries in this cluster
+            merc_count = f"<h3>Mercenary Equipment Analysis for Cluster {cluster}</h3>"
+
+            # Mercenary type counts
+            merc_count += "<h4>Count of Mercenary Types</h4>"
+            for mercenary, count in mercenary_counts.items():
+                merc_count += f"<p>{mercenary}: {count}</p>"
+
+            # Mercenary equipment titles
+            merc_count += "<h4>Equipment Titles</h4>"
+            for mercenary, equipment in mercenary_equipment.items():
+                merc_count += f"<p><strong>{mercenary}:</strong></p>"
+                for title, count in equipment.items():
+                    merc_count += f"<p>{title}: {count}</p>"
+
+            # ✅ Fix: Ensure the cluster exists before adding merc_count
+            if cluster not in clusters:
+                clusters[cluster] = {}
+
+            if 'merc_count' not in clusters[cluster]:
+                clusters[cluster]['merc_count'] = merc_count
+
+            # Calculate total counts for each category
+            total_counts = {
+                worn: sum(titles.values())
+                for worn, titles in equipment_counts.items()
+            }
+
+            # Calculate the percentages based on total counts
+            equipment_percentages = {
+                worn: {title: (count / total_counts[worn]) * 100 for title, count in titles.items()}
+                for worn, titles in equipment_counts.items()
+            }
+
+            # Get top equipment based on count
+            top_equipment = {
+                worn: sorted(titles.items(), key=lambda item: item[1], reverse=True)[:5]
+                for worn, titles in equipment_counts.items()
+            }
+
+            # Use equipment_percentages for display
+            top_equipment_str_list = []
+            for worn, titles in top_equipment.items():
+                titles_str = "<br>".join([f"&nbsp;&nbsp;&nbsp;&nbsp;{title} {equipment_percentages[worn][title]:.2f}% ({count})" for title, count in titles])
+                top_equipment_str_list.append(f"<strong>{worn.capitalize()}</strong>: <br>{titles_str}")
+
+            top_equipment_str = "<br>".join(top_equipment_str_list)
+
+            # Use sorted_equipment_counts for full display
+            sorted_equipment_counts = {
+                worn: dict(sorted(titles.items(), key=lambda item: item[1], reverse=True))
+                for worn, titles in equipment_counts.items()
+            }
+
+            equipment_counts_str_list = []
+            for worn, titles in sorted_equipment_counts.items():
+                titles_str = ", ".join([f"{title} {equipment_percentages[worn][title]:.2f}%" for title in titles])
+                equipment_counts_str_list.append(f"<strong>{worn.capitalize()}</strong>: {titles_str}")
+
+            equipment_counts_str = "<br>".join(equipment_counts_str_list)
+
+            # Output results
+#            print(top_equipment_str)
+#            print(equipment_counts_str)
+
+
+            # Define a helper function to format numbers
+            def format_number(num):
+                return int(num) if num % 1 == 0 else round(num, 2)
+
+            # Filter top skills
+            top_skills = [skill for skill, _, _ in top_skills_with_avg_and_percent[cluster]]
+
+            # Filter other skills, ignoring those with zero points
+            other_skills = skill_averages.loc[cluster].drop(top_skills)
+            other_skills = other_skills[other_skills > 0].nlargest(6)
+            other_skills_pie = "<br>".join([f"{skill} ({format_number(avg)})" for skill, avg in other_skills.items()])
+#            other_skills_str = "<br>".join([f"<img src='{icons_folder}/{skill}.png' alt='{skill}' width='20' height='20'> {skill} {round(skill_percentages.loc[cluster, skill], 2)}% ({format_number(other_skills[skill] * character_count)})" for skill in other_skills.index])
+            other_skills_str = "<br>".join([
+                f"<img src='{icons_folder}/{skill}.png' alt='{skill}' class='skill-icon'> "
+                f"<span class='{'highlight-100' if round(skill_percentages.loc[cluster, skill], 2) == 100 else 'normal-skill'}'>"
+                f"{skill} {round(skill_percentages.loc[cluster, skill], 2)}% "
+                f"({format_number(other_skills[skill] * character_count)})</span>"
+                for skill in other_skills.index
+            ])
+            # Filter remaining skills, ignoring those with zero points
+            remaining_skills = skill_averages.loc[cluster].sort_values(ascending=False)
+            remaining_skills = remaining_skills[remaining_skills > 0]
+#            remaining_skills_str2 = "<br>".join([f"{skill} {round(skill_percentages.loc[cluster, skill], 2)}% ({format_number(remaining_skills[skill] * character_count)})" for skill in remaining_skills.index])
+            remaining_skills_str2 = "<br>".join([
+                f"<img src='{icons_folder}/{skill}.png' alt='{skill}' class='skill-icon'> "
+                f"<span class='{'highlight-100' if round(skill_percentages.loc[cluster, skill], 2) == 100 else 'normal-skill'}'>"
+                f"{skill} {round(skill_percentages.loc[cluster, skill], 2)}% "
+                f"({format_number(remaining_skills[skill] * character_count)})</span>"
+                for skill in remaining_skills.index
+            ])
+
+
+#            remaining_skills_str_with_icons = "<br>".join([f"<img src='{icons_folder}/{skill}.png' alt='{skill}' width='20' height='20'> {skill} {round(skill_percentages.loc[cluster, skill], 2)}% ({format_number(remaining_skills[skill] * character_count)})" for skill in remaining_skills.index])
+            # Group the skills into chunks of 5
+            # Group skills into chunks of 10, with each row containing 2 skills
+            remaining_skills_str_with_icons = "\n".join([
+                "<div class='skills-group'>" + "\n".join([
+                    "<div class='skills-row'>" +
+                    "\n".join([
+                        f"<div class='skill-item'>"
+                        f"<div class='skillbar-container'>"
+                        f"<div class='skill-info'>"
+                        f"<img src='{icons_folder}/{skill}.png' alt='{skill}' class='skill-icon'> "
+                        f"{skill} {round(skill_percentages.loc[cluster, skill], 2)}% ({format_number(remaining_skills[skill] * character_count)})"
+                        f"</div>"
+                        f"<div class='skill-mini-bar' style='width: {round(skill_percentages.loc[cluster, skill], 2) * 4}px;'></div>"
+                        f"</div>"
+                        f"</div>"
+                        for skill in remaining_skills.index[row:row+2]
+                    ]) +
+                    "</div>"  # Close row
+                    for row in range(i, min(i+10, len(remaining_skills.index)), 2)
+                ]) + "</div>"  # Close group
+                for i in range(0, len(remaining_skills.index), 10)
+            ])
+
+        #    all_skills_str2 = "<br>".join([f"{skill} {round(skill_percentages.loc[cluster, skill], 2)}% ({round(remaining_skills[skill] * character_count, 2)})" for skill in all_skills.index])
+        #    all_skills_str2_with_icons = "<br>".join([f"<img src='{icons_folder}/{skill}.png' alt='{skill}' width='20' height='20'> {skill} {round(skill_percentages.loc[cluster, skill], 2)}% ({round(remaining_skills[skill] * character_count, 2)})" for skill in all_skills.index])
+            sorted_summary_label = ""
+            summary_labels = [skill for skill, _, _ in top_skills_with_avg_and_percent[cluster]]
+            summary = f"&nbsp;&nbsp;- {cluster_percentage:.2f}% use " + ", ".join(summary_labels)
+#            summary = f"{cluster_percentage:.2f}% of {what_class}'s invest heavily in " + ", ".join(summary_labels)
+            summaries.append((cluster_percentage, summary))
+
+            clusters[cluster] = {
+                'label': f'<div id="cluster-{cluster}">' +
+                        f"{cluster_percentage:.2f}% of {what_class}'s Main Skills:" +
+                        f'<a href="#cluster-{cluster}" class="anchor-link">' +
+                        f'<img src="icons/anchor.png" alt="🔗" class="anchor-icon"></a>' +
+                        '<br>' +
+                        "".join([
+                    f"""
+                    <div class="skillbar-container">
+                        <div class="skill-row">
+                            <img src="{icons_folder}/{skill}.png" alt="{skill}" class="skill-icon">
+                            <div class="skill-bar-container">
+                                <div class="skill-bar" >
+                                    <span class="skill-label">{skill} ({int(avg * character_count)})</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    """
+                    for skill, avg, percent in top_skills_with_avg_and_percent[cluster]
+                ]) +
+                        '</div>',
+
+                'character_count': character_count,
+                'other_skills': other_skills_str,
+                'other_skills_pie': other_skills_pie,
+                'characters': [
+                    {
+                        'name': row.Name, 'level': row.Level, 'skills': row.Skills,
+                        'equipment': row.Equipment, 'mercenary': row.Mercenary,
+                        'mercenary_equipment': row.MercenaryEquipment, 'class': row.Class
+                    } 
+                    for row in sorted_group.itertuples()
+                ],
+                'top_equipment': top_equipment_str,  
+                'equipment_counts': equipment_counts_str,
+                'remaining_skills_with_icons': remaining_skills_str_with_icons,
+                'remaining_skills_str2': remaining_skills_str2,  
+                'top_5_most_used_skills': top_5_most_used_skills,
+                'bottom_5_least_used_skills': bottom_5_least_used_skills,
+                'summary_label': summary_label, 
+                'mercenary': mercenary,  
+                'mercenary_equipment': mercenary_equipment,
+            }
+            _, mercenary_counts, mercenary_equipment, mercenary_names = analyze_mercenaries(filtered_characters)
+    
+
+        # Ensure the correct percentage values are used
+        pie_data = df.groupby('Cluster').agg({
+            'Percentage': 'mean',  # Get the mean percentage for each cluster
+            'Cluster_Label': 'first'  # Use the first cluster label as representative
+        }).reset_index()
+
+        # Include other_skills in customdata
+        pie_data['other_skills_pie'] = pie_data['Cluster'].map(lambda cluster: clusters[cluster]['other_skills_pie'])
+
+        # Combine cluster label and percentage for the pie chart labels
+        pie_data['Cluster_Label_Percentage'] = pie_data.apply(lambda row: f"{row['Percentage']:.2f}% - Main Skills and avg points: {row['Cluster_Label']}", axis=1)
+
+        import plotly.express as px
+
+        # Get unique clusters
+        unique_clusters = sorted(df['Cluster'].unique())  # Sorting ensures consistent ordering
+
+        # Assign colors from a predefined palette
+        color_palette = px.colors.qualitative.Safe  # You can change this to Vivid, Bold, etc.
+        color_map = {cluster: color_palette[i % len(color_palette)] for i, cluster in enumerate(unique_clusters)}
+
+        # Create a pie chart
+        fig_pie = px.pie(
+            pie_data,
+            values='Percentage',
+            names='Cluster_Label_Percentage',
+            title=f"{what_class} Skills Distribution",
+            hover_data={'Cluster_Label': True, 'other_skills_pie': True},
+            color_discrete_map={row['Cluster_Label_Percentage']: color_map[row['Cluster']] for _, row in pie_data.iterrows()}  # ✅ Maps labels to the same colors
+        )
+
+        # Update customdata to pass Cluster_Label
+        fig_pie.update_traces(customdata=pie_data[['Cluster_Label', 'other_skills_pie']])
+
+        # Customize the hover template for the pie chart
+        fig_pie.update_traces(
+            textinfo='percent',  # Keep percentages on the pie slices
+            textposition='inside',  # Position percentages inside the pie slices
+            hovertemplate="<b>%{customdata[0]}</b><br>Other Skills and Average Point Investment:<br>%{customdata[1]}<extra></extra>",
+            marker=dict(line=dict(color='black', width=1)),  # Add a slight outline for clarity
+            pull=[0.05] * len(pie_data),  # Slightly pull slices apart to increase visibility
+            hole=0  # Ensure it's a full pie (not a donut)
+        )
+
+        # Position the legend outside the pie chart and adjust the pie chart size
+        fig_pie.update_layout(
+            legend=dict(
+                orientation="h",  # Horizontal legend
+                yanchor="top",
+                y=-0.15,  # Move it closer
+                xanchor="center",
+                x=0.5,  # Keep it centered
+                font=dict(size=10, color='white'),
+                bgcolor='rgba(0,0,0,0)',
+#                font=dict(color='white'),  # ✅ Transparent background
+            ),
+            paper_bgcolor='rgba(0,0,0,0)', # ✅ Transparent background
+            margin=dict(l=10, r=10, t=50, b=20),  # Reduce bottom margin to make more space
+            width=900,  # Set the width of the entire chart
+            height=600,  # Set the height of the entire chart
+            font=dict(color='white'),  # ✅ Makes all text white
+            title=dict(font=dict(color='white')),  # ✅ Ensures title is also white
+#            legend=dict(font=dict(color='white'))  # ✅ Ensures legend text is white
+        )
+
+        # Increase the pie size explicitly
+        fig_pie.update_traces(domain=dict(x=[0, 1], y=[0.1, 1]))  # Expands pie upward
+
+        # Save the pie chart as a PNG file
+        fig_pie.write_image(f"charts/{what_class}-clusters_distribution_pie.png")
+
+        # Create a DataFrame for visualization
+        plot_data = pd.DataFrame({
+            'PCA1': reduced_data[:, 0],
+            'PCA2': reduced_data[:, 1],
+            'Cluster': df['Cluster'],
+            'Cluster_Label': df['Cluster_Label'],
+            'Percentage': df['Percentage']
+        })
+
+        # Create an interactive scatter plot
+        fig_scatter = px.scatter(
+            plot_data,
+            x='PCA1',
+            y='PCA2',
+            color='Cluster',  # Assign color based on the cluster
+            title=f"{what_class} Skill Clusters (Ladder Top 200 {what_class}'s Highlighted)<br>This highlights how similar (or not) a character is to the rest<br>The tighter the grouping, the more they are alike",
+            hover_data={'Cluster_Label': True, 'Percentage': ':.2f%', 'Cluster': True},
+            color_discrete_map=color_map  # Use the same colors as the pie chart
+        )
+
+        # Customize the legend labels
+        for trace in fig_scatter.data:
+            if trace.name.isnumeric():  # Ensure that the trace name is numeric
+                trace.update(name=legend_labels[int(trace.name)])
+
+        # Customize hover template to include top skills and percentage
+        fig_scatter.update_traces(
+            hovertemplate="<b>Cluster skills and average point investment:</b><br> %{customdata[0]}<br>" +
+                        "This cluster (%{customdata[2]}) makes up %{customdata[1]:.2f}% of the total<extra></extra>"
+        )
+
+        # Hide the axis titles and tick labels
+        fig_scatter.update_layout(
+            xaxis_title=None,
+            yaxis_title=None,
+            xaxis_showticklabels=False,
+            yaxis_showticklabels=False
+        )
+
+        # Save the scatter plot as a PNG file
+        fig_scatter.write_image(f"charts/{what_class}-clusters_with_avg_points.png")
+
+        print("Pie chart and scatter plot saved as PNG files.")
+
+        # Sort clusters by percentage in descending order
+        sorted_clusters = dict(sorted(clusters.items(), key=lambda item: item[1]['character_count'], reverse=True))
+
+        # Split the entries into a list
+        entries = summary_label.strip().split("<br>\n")
+        # Remove any empty strings from the list (if any)
+        entries = [entry for entry in entries if entry.strip()]
+        # Sort the entries in descending order based on the percentage value
+        sorted_entries = sorted(entries, key=lambda x: float(x.split('%')[0]), reverse=False)
+        # Join the sorted entries back into a single string
+        sorted_summaries = sorted(summaries, key=lambda x: x[0], reverse=True)
+
+##  summarize_favored_sorceress_trees same as above, but with columns for display
+        CLASS_SKILL_TREES = {
+            "Assassin": ["Traps", "Shadow Disciplines", "Martial Arts"],
+            "Amazon": ["Bow and Crossbow Skills", "Javelin and Spear Skills"],
+            "Barbarian": ["Combat Masteries", "Warcries", "Combat Skills"],
+            "Druid": ["Summoning Skills", "Shape Shifting Skills", "Elemental Skills"],            
+            "Necromancer": ["Curses", "Poison and Bone Skills", "Summoning Skills"],
+            "Paladin": ["Defensive Auras", "Offensive Auras", "Combat Skills"],
+            "Sorceress": ["Cold Skills", "Fire Skills", "Lightning Skills"],
+       }
+
+        def summarize_favored_class_trees(filtered_characters, tree_threshold=60, hybrid_threshold=35):
+            from collections import defaultdict
+
+            # Nest counts per class
+            favored_counts = defaultdict(lambda: defaultdict(int))
+            hybrid_combo_counts = defaultdict(lambda: defaultdict(int))
+            total_chars_per_class = defaultdict(int)
+
+            for char in filtered_characters:
+                class_name = char.get("Class")
+                skill_trees = CLASS_SKILL_TREES.get(class_name)
+                if not skill_trees:
+                    continue  # Skip unknown classes
+
+                tab_totals = {tab["Name"]: tab["Total"] for tab in char.get("SkillTabs", [])}
+                trees = {tree_name: tab_totals.get(tree_name, 0) for tree_name in skill_trees}
+                total_chars_per_class[class_name] += 1
+
+                # Count favored trees
+                for tree, pts in trees.items():
+                    if pts >= tree_threshold:
+                        favored_counts[class_name][tree] += 1
+
+                # Count hybrid combos
+                high_trees = [tree for tree, pts in trees.items() if pts >= hybrid_threshold]
+                if len(high_trees) >= 2:
+                    label = "all trees" if len(high_trees) == len(skill_trees) else " + ".join(sorted(high_trees))
+                    hybrid_combo_counts[class_name][label] += 1
+
+            # Build summary HTML
+            html_sections = []
+            for class_name in sorted(total_chars_per_class):
+                total_chars = total_chars_per_class[class_name]
+                favored = favored_counts[class_name]
+                hybrids = hybrid_combo_counts[class_name]
+
+                favored_lines = [
+                    f"&nbsp;&nbsp;&nbsp;&nbsp;{(count / total_chars) * 100:.2f}% of {class_name}s favor {tree}"
+                    for tree, count in sorted(favored.items(), key=lambda x: x[1], reverse=True)
+                ]
+
+                hybrid_lines = []
+                if hybrids:
+                    for label, count in sorted(hybrids.items(), key=lambda x: x[1], reverse=True):
+                        percent = (count / total_chars) * 100
+                        if percent < 1:
+                            hybrid_lines.append(f"&nbsp;&nbsp;&nbsp;&nbsp&lt;1% invest in {label}")
+                        else:
+                            hybrid_lines.append(f"&nbsp;&nbsp;&nbsp;&nbsp{percent:.0f}% invest in {label}")
+                else:
+                    hybrid_lines.append("&nbsp;&nbsp;&nbsp;&nbsp<i>No hybrid builds found</i>")
+
+                section_html = [
+                    f"<h3>{class_name}</h3>",
+                    "<table style='width:100%;'><tr><td style='vertical-align:top;'>",
+                    f"<b>Favored Trees ({tree_threshold} point investment):</b><br>",
+                    "<br>".join(favored_lines),
+                    "</td><td style='vertical-align:top;'>",
+                    f"<b>Hybrid Builds ({hybrid_threshold}+ Points in each tree):</b><br>",
+                    "<br>".join(hybrid_lines),
+                    "</td></tr></table>"
+                ]
+                html_sections.extend(section_html)
+
+            return "\n".join(html_sections)
+
+        skill_tree_mappings = {
+            "Amazon": {
+                "Javelin & Spear": {"Lightning Fury", "Charged Strike", "Jab", "Power Strike", "Plague Javelin", "Poison Javelin", "Fend"},
+                "Bow & Crossbow": {"Multiple Shot", "Immolation Arrow", "Freezing Arrow", "Fire Arrow", "Exploding Arrow", "Guided Arrow", "Magic Arrow", "Strafe"},
+            },
+            "Assassin":{
+                "Martial Arts": {"Claws of Thunder", "Fists of Fire", "Blades of Ice"},
+                "Traps": {"Wake of Fire", "Wake of Inferno", "Lightning Sentry", "Death Sentry", "Charged Bolt Sentry", "Shock Web"},
+        #        "Lightning Traps": {"Lightning Sentry", "Death Sentry", "Charged Bolt Sentry", "Shock Web"},
+
+            },
+            "Barbarian":{
+                "Warcry": {"War Cry"},
+                "Throw": {"Ethereal Throw", "Double Throw"},
+                "Whirling Axes": {"Whirling Axes", "Battle Cry"},
+                "Combat": {"Cleave", "Concentrate", "Bash", "Frenzy"},
+                "Whirlwind": {"Whirlwind"},
+            },
+            "Sorceress": {
+                "Melee Sorc Skills": {"Frigerate", "Enflame"},
+#                "Hybrid Skills": {"Blizzard", "Hydra"} ,
+#                "Hybrid Skills": {"Frozen Orb", "Hydra"},
+#                "Hybrid Skills": {"Freezing Pulse", "Hydra"},
+                "Cold Spells": {"Freezing Pulse", "Frozen Orb", "Blizzard", "Ice Bolt", "Cold Mastery", "Glacial Spike"},
+                "Lightning Spells": {"Nova", "Lightning", "Chain Lightning", "Lightning Mastery", "Thunder Storm"},
+                "Fire Spells": {"Fire Ball", "Meteor", "Hydra", "Fire Mastery", "Enflame"},
+            },
+            "Paladin": {
+                "FoH": {"Fist of the Heavens", "Holy Bolt"},
+                "Melee Combat": {"Smite", "Charge", "Zeal", "Dashing Strike"},
+                "Hammerdins": {"Blessed Hammer", "Blessed Aim"}
+        #        "Offensive Auras": {"Fanaticism", "Conviction", "Holy Fire", "Holy Shock"},
+        #        "Defensive Auras": {"Defiance", "Resist Fire", "Resist Cold", "Resist Lightning"},
+            },
+            "Necromancer": {
+#                "CE": {"Corpse Explosion", "Fire Golem"},
+                "Poison & Bone": {"Bone Spear", "Bone Spirit", "Poison Nova", "Teeth", "Corpse Explosion", "Deadly Poison"},
+                "Summoning": {"Raise Skeleton", "Skeleton Mastery", "Revive", "Clay Golem", "Fire Golem"},
+                "Hemo": {"Hemorrhage", "Amplify Damage", "Decrepify", "Lower Resist", "Iron Maiden"},
+            },
+            "Druid": {
+                "Elemental": {"Hurricane", "Tornado", "Firestorm", "Molten Boulder"},
+                "Shape Shifting": {"Werewolf", "Werebear", "Feral Rage", "Maul"},
+                "Summoning": {"Raven", "Summon Grizzly", "Summon Dire Wolf"},
+            },
+        }
+        # Function to sort builds into categories
+        def organize_by_skill_tree(class_name, sorted_summaries):
+            if class_name not in skill_tree_mappings:
+                return "<br>".join(f"{pct:.2f}% {summary}" for pct, summary in sorted_summaries)
+
+            skill_trees = skill_tree_mappings[class_name]
+            tree_investment = {tree: 0 for tree in skill_trees}
+            sorted_builds = {tree: [] for tree in skill_trees}
+
+            for pct, summary in sorted_summaries:
+                assigned_tree = None
+                for tree, skills in skill_trees.items():
+                    if any(skill in summary for skill in skills):
+                        assigned_tree = tree
+                        break  # Only assign once
+
+                if assigned_tree:
+                    tree_investment[assigned_tree] += pct
+                    sorted_builds[assigned_tree].append(f" {summary}")  # ✅ Remove unnecessary breaks
+
+#            intro_summary = []
+            final_summary = []
+            for tree, pct in tree_investment.items():
+                if pct > 0:
+#                    intro_summary.append(f"<br><strong>{pct:.2f}% of all {class_name}s favor {tree} </strong>")
+                    final_summary.append(f"<br><strong>{pct:.2f}% of all {class_name}s favor {tree} </strong>")
+                    final_summary.extend(sorted_builds[tree])  # ✅ Ensures builds are close to category header
+
+            return "<br>".join(final_summary) #, "<br>".join(intro_summary)  # ✅ Join without excessive spacing
+        
+        organize_by_skill_tree(what_class, sorted_summaries)
+
+        def organize_by_skill_tree_intro(class_name, sorted_summaries):
+            if class_name not in skill_tree_mappings:
+                return "<br>".join(f"{pct:.2f}% {summary}" for pct, summary in sorted_summaries)
+
+            skill_trees = skill_tree_mappings[class_name]
+            tree_investment = {tree: 0 for tree in skill_trees}
+            sorted_builds = {tree: [] for tree in skill_trees}
+
+            for pct, summary in sorted_summaries:
+                assigned_tree = None
+                for tree, skills in skill_trees.items():
+                    if any(skill in summary for skill in skills):
+                        assigned_tree = tree
+                        break  # Only assign once
+
+                if assigned_tree:
+                    tree_investment[assigned_tree] += pct
+                    sorted_builds[assigned_tree].append(f" {summary}")  # ✅ Remove unnecessary breaks
+
+            intro_summary = []
+            # Sort the dictionary by values in descending order
+            sorted_tree_investment = sorted(tree_investment.items(), key=lambda item: item[1], reverse=True)
+
+            for tree, pct in sorted_tree_investment:
+                if pct > 0:
+                    intro_summary.append(f"<strong>{pct:.2f}% of all {class_name}s favor {tree}</strong>")
+
+            return "<br>".join(intro_summary)  # ✅ Join without excessive spacing        
+        organize_by_skill_tree_intro(what_class, sorted_summaries)
+
+        amazon_summary =  ""       
+        amazon_summary = ""
+        assassin_summary = ""
+        barbarian_summary = ""
+        druid_summary = ""
+        necromancer_summary = ""
+        paladin_summary = ""
+        sorceress_summary = ""
+        intro_summary = ""
+
+#        amazon_summary = "<br><strong>46% of all Amazons favor Spear and Javelin Skills</strong><br>" \
+#                        "<strong>54% of all Amazons favor Bow Skills</strong><br><br>More detailed breakdown:<br>"
+#        assassin_summary = "<br><strong>70% of all Assasins favor Wof/WoI</strong><br>" \
+#                        "<strong>16% of all Assasins favor Martial Arts</strong><br><br>More detailed breakdown:<br>"
+#        barbarian_summary = "<br><strong>50% of all Barbs favor Whirling Axes</strong><br>" \
+#                        "<strong>3% of all Barbs favor Throwing</strong><br><br>More detailed breakdown:<br>"
+#        druid_summary = "<br><strong>40% of all Druids favor Shapeshifting</strong><br>" \
+#                        "<strong>30% of all Druids favor Summons</strong><br>" \
+#                        "<strong>30% of all Druids favor Elemental Skills</strong><br><br>More detailed breakdown:<br>"
+#        necromancer_summary = "<br><strong>52% of all Necros favor Hemo</strong><br>" \
+#                        "<strong>32% of all Necros favor CE</strong><br><br>More detailed breakdown:<br>"
+#        paladin_summary = "<br><strong>43% of all Paladins favor FoH</strong><br>" \
+#                        "<strong>21% of all Paladins are Hammerdins</strong><br><br>More detailed breakdown:<br>"
+#        sorceress_summary = "<br><strong>42% of all Sorcs favor Lightning</strong><br>" \
+#                        "<strong>42% of all Sorcs favor Cold</strong><br>" \
+#                        "<strong>14% of all Sorcs favor Fire</strong><br><br>More detailed breakdown:<br>"
+        
+        meta_tag = what_class + ", path of diablo, builds, stats, statistics, data, analysis, analytics, trends, "
+        structured_summary = organize_by_skill_tree(what_class, sorted_summaries)
+        intro_summary = organize_by_skill_tree_intro(what_class, sorted_summaries)
+
+        if what_class == "Amazon":
+            intro_summary = summarize_favored_class_trees(filtered_characters)
+            structured_summary_label = intro_summary + "<br><br>" + "<br>".join(summary for _, summary in sorted_summaries)
+#            summary_label = amazon_summary + "<br>".join(summary for _, summary in sorted_summaries)
+#            structured_summary_label = amazon_summary + "" + structured_summary
+#            intro_summary = intro_summary
+
+        elif what_class == "Assassin":
+            intro_summary = summarize_favored_class_trees(filtered_characters)
+            structured_summary_label = intro_summary + "<br><br>" + "<br>".join(summary for _, summary in sorted_summaries)
+#            summary_label = assassin_summary + "<br>".join(summary for _, summary in sorted_summaries)
+#            structured_summary_label = assassin_summary + "" + structured_summary
+#            intro_summary = intro_summary
+        elif what_class == "Barbarian":
+            summary_label = barbarian_summary + "<br>".join(summary for _, summary in sorted_summaries)
+            structured_summary_label = barbarian_summary + "" + structured_summary
+            intro_summary = intro_summary
+        elif what_class == "Druid":
+            intro_summary = summarize_favored_class_trees(filtered_characters)
+            structured_summary_label = intro_summary + "<br><br>" + "<br>".join(summary for _, summary in sorted_summaries)
+#            summary_label = druid_summary + "<br>".join(summary for _, summary in sorted_summaries)
+#            structured_summary_label = druid_summary + "" + structured_summary
+#            intro_summary = intro_summary
+        elif what_class == "Necromancer":
+            intro_summary = summarize_favored_class_trees(filtered_characters)
+            structured_summary_label = intro_summary + "<br><br>" + "<br>".join(summary for _, summary in sorted_summaries)
+#            summary_label = necromancer_summary + "<br>".join(summary for _, summary in sorted_summaries)
+#            structured_summary_label = necromancer_summary + "" + structured_summary
+#            intro_summary = intro_summary
+        elif what_class == "Paladin":
+            summary_label = paladin_summary + "<br>".join(summary for _, summary in sorted_summaries)
+            structured_summary_label = paladin_summary + "" + structured_summary
+            intro_summary = intro_summary
+        elif what_class == "Sorceress": 
+            intro_summary = summarize_favored_class_trees(filtered_characters)
+#            intro_summary = summarize_sorceress_with_hybrid_summary(filtered_characters)
+#            intro_summary = summarize_sorceress_with_hybrids(filtered_characters)
+#            intro_summary = summarize_sorceress_by_tree(filtered_characters)
+            structured_summary_label = intro_summary + "<br><br>" + "<br>".join(summary for _, summary in sorted_summaries)
+#        elif what_class == "Sorceress":
+#            summary_label = sorceress_summary + "<br>".join(summary for _, summary in sorted_summaries)
+#            structured_summary_label = sorceress_summary + "" + structured_summary
+#            meta_tag += "Sorc, Frigerate, Enflame, Blizzard, Hydra, Frozen Orb, Freezing Pulse, Ice Bolt, Cold Mastery, Glacial Spike, Nova, Lightning, Chain Lightning, Thunder Storm, Fire Ball, Meteor, Hydra, Fire Mastery"
+#            intro_summary = intro_summary
+        else:
+            structured_summary_label = structured_summary  # Default case
+
+        # Combine both versions for side-by-side comparison
+        full_summary_output = f"""
+        <h2>Build Trends</h2>
+        <p>{structured_summary_label}</p>
+        <hr>
+        <h2>Detailed Grouping Information, Ordered Highest to Lowest %</h2>
+        <p>{summary_label}</p>
+        """
+#        else: 
+#            summary_label = "<br>".join(summary for _, summary in sorted_summaries)
+
+#        summary_label = "<br>".join(summary for _, summary in sorted_summaries)
+        #print(summary_label)
+
+        # Ensure the cluster exists before adding merc_count
+        if cluster not in clusters:
+            clusters[cluster] = {}
+
+        clusters[cluster]['merc_count'] = merc_count
+
+    #    print(f"✅ Added merc data for cluster {cluster}:")
+    #    print(merc_count)
+
+        dt = datetime.now()
+        # format it to a string
+        timeStamp = dt.strftime('%Y-%m-%d %H:%M')
+
+        with open("sc_ladder.json", "r") as file:
+            all_characters = json.load(file)
+
+        sorted_runes, sorted_excluding_runes, all_other_items = socket_html(filtered_characters)
+
+        # Render the HTML report
+        template = Template(html_template)
+        html_content = template.render(
+            clusters=sorted_clusters,
+            what_class=what_class,
+            top_5_most_used_skills=top_5_most_used_skills,
+            bottom_5_least_used_skills=bottom_5_least_used_skills,
+            summary_label=summary_label,
+            merc_count=merc_count,
+            mercenary=mercenary,
+            mercenary_equipment=mercenary_equipment,
+            timeStamp=timeStamp,
+            fun_facts_html=fun_facts_html,
+            historical_usage=historical_usage  # 👈 add this
+        )
+
+
+        socketed_runes_html, socketed_excluding_runes_html, other_items_html = socket_html(filtered_characters)
+
+        filled_html_content = f"""{html_content}""".replace(
+                "{most_popular_runewords}", generate_list_items(most_common_runewords)
+            ).replace(
+                "{most_popular_uniques}", generate_list_items(most_common_uniques)
+            ).replace(
+                "{most_popular_set_items}", generate_list_items(most_common_set_items)
+            ).replace(
+                "{least_popular_runewords}", generate_list_items(least_common_runewords)
+            ).replace(
+                "{least_popular_uniques}", generate_list_items(least_common_uniques)
+            ).replace(
+                "{least_popular_set_items}", generate_list_items(least_common_set_items)
+            ).replace( 
+                "{all_runewords}", generate_all_list_items(all_runewords, runeword_users)
+            ).replace(
+                "{all_uniques}", generate_all_list_items(all_uniques, unique_users)
+            ).replace(
+                "{all_set}", generate_all_list_items(all_set, set_users)
+            ).replace(
+                "{all_synth}", generate_synth_list_items(synth_counter, synth_users)
+            ).replace(
+                "{timeStamp}", timeStamp
+            ).replace(
+                "{synth_user_count}", str(synth_user_count)
+            ).replace(
+                "{all_crafted}", generate_crafted_list_items(crafted_counters, crafted_users)
+            ).replace(
+                "{craft_user_count}", str(craft_user_count)
+            ).replace(
+                "{synth_source_data}", generate_synth_source_list(synth_sources)
+            ).replace(
+                "{synth_source_user_count}", str(synth_source_user_count)
+            ).replace(
+                "{all_magic}", generate_magic_list_items(magic_counters, magic_users)
+            ).replace(
+                "{magic_user_count}", str(magic_user_count)
+            ).replace(
+                "{all_rare}", generate_rare_list_items(rare_counters, rare_users)
+            ).replace(
+                "{rare_user_count}", str(rare_user_count)
+            ).replace(
+                "{sorted_just_socketed_runes}", socketed_runes_html  # ✅ Correctly insert formatted HTML
+            ).replace(
+                "{sorted_just_socketed_excluding_runewords_runes}", socketed_excluding_runes_html
+            ).replace(
+                "{all_other_items}", other_items_html
+            ).replace(
+                "{fun_facts_html}", fun_facts_html
+            ).replace(
+                "{all_maxed}", generate_maxed_skills_section(maxed_skills, filtered_characters)
+            ).replace(
+                "{meta_tag}", meta_tag
+            ).replace(
+                "{intro_summary}", intro_summary
+            ).replace(
+                "{html_output}", html_output
+            )
+
+
+        # Save the report to a file
+        output_file = f"{what_class}.html"
+        with open(output_file, "w") as file:
+            file.write(filled_html_content)
+
+        print(f"Cluster analysis report saved to {output_file}")
+    pass
+
+    # ✅ Process all 7 classes
+    for class_info in classes:
+        generate_report(**class_info, all_characters=all_characters)
+
+
+def MakehcClassPages():
+    classes = [
+        {"what_class": "Barbarian", "howmany_clusters": 11, "howmany_skills": 5},
+        {"what_class": "Druid", "howmany_clusters": 7, "howmany_skills": 5},
+        {"what_class": "Amazon", "howmany_clusters": 9, "howmany_skills": 5},
+        {"what_class": "Assassin", "howmany_clusters": 9, "howmany_skills": 5},
+        {"what_class": "Necromancer", "howmany_clusters": 6, "howmany_skills": 5},
+        {"what_class": "Paladin", "howmany_clusters": 11, "howmany_skills": 5},
+        {"what_class": "Sorceress", "howmany_clusters": 11, "howmany_skills": 5}
+    ]
+
+    icons_folder = "icons"
+
+    # ✅ Load the single JSON file
+    with open("hc_ladder.json", "r") as file:
+        all_characters = json.load(file)
+    all_characters = [char for char in all_characters if isinstance(char, dict) and char.get("Stats", {}).get("Level", 0) >= 60]
+
+    def map_readable_names(mercenary_type, worn_category=""):
+        mercenary_mapping = {
+            "Desert Mercenary": "Act 2 Desert Mercenary",
+            "Rogue Scout": "Act 1 Rogue Scout",
+            "Eastern Sorceror": "Act 3 Eastern Sorceror",
+            "Barbarian": "Act 5 Barbarian"
+        }
+        worn_mapping = {
+            "body": "Armor",
+            "helmet": "Helmet",
+            "weapon1": "Weapon",
+            "weapon2": "Offhand"
+        }
+        readable_mercenary = mercenary_mapping.get(mercenary_type, mercenary_type)
+        readable_worn = worn_mapping.get(worn_category, worn_category)
+        return readable_mercenary, readable_worn
+
+    def generate_report(what_class, howmany_clusters, howmany_skills, all_characters):
+        # ✅ Filter characters by class
+        filtered_characters = [char for char in all_characters if char.get("Class") == what_class]
+
+        maxed_skills = defaultdict(list)  # skill_name -> list of character names
+
+        for char in filtered_characters:
+            name = char.get("Name", "Unknown")
+            for skill_tab in char.get("SkillTabs", []):
+                for skill in skill_tab.get("Skills", []):
+                    if skill.get("Level", 0) == 20:
+                        skill_name = skill.get("Name", "Unknown Skill")
+                        maxed_skills[skill_name].append(name)
+
+        # 🔎 Optional: Sort for display
+        sorted_maxed_skills = sorted(maxed_skills.items(), key=lambda x: len(x[1]), reverse=True)
+
+        ## Print maxed skill details
+#        print(f"\n=== Maxed Skills for {what_class} ===")
+#        for skill, names in sorted_maxed_skills:
+#            print(f"{skill}: {len(names)} characters")
+#            print(f"  e.g. {', '.join(names[:5])}")
+
+        # ✅ Process Data
+        def load_data(filtered_characters):
+            all_data = []
+            quality_colors = {
+                "q_runeword": "#edcd74",
+                "q_unique": "#edcd74",
+                "q_set": "#45a823",
+                "q_magic": "#7074c9",
+                "q_rare": "yellow",
+                "q_crafted": "orange"
+            }
+
+            for char_data in filtered_characters:
+                if "SkillTabs" in char_data and "Equipped" in char_data:
+                    skill_data = {
+                        "Name": char_data.get("Name", "Unknown"),
+                        "Class": char_data.get("Class", "Unknown"),
+                        "Level": char_data.get("Stats", {}).get("Level", "Unknown"),
+                        "Dead": char_data.get("IsDead", 'Unknown')
+                    }
+
+                    # ✅ Extract and sort skills
+                    skills = []
+                    for tab in char_data.get('SkillTabs', []):
+                        for skill in tab.get('Skills', []):
+                            skill_name = skill['Name']
+                            skill_level = skill['Level']
+                            skill_data[skill_name] = skill_level
+                            skills.append((skill_name, skill_level))
+
+                    skills_sorted = sorted(skills, key=lambda x: x[1], reverse=True)
+                    skill_data["Skills"] = ", ".join([
+                        f"<img src='{icons_folder}/{name}.png' alt='{name}' class='skill-icon-smaller'> {name}:{level}"
+                        for name, level in skills_sorted
+                    ])
+
+                    # ✅ Process Equipment
+                    equipment_titles = defaultdict(Counter)
+                    for item in char_data["Equipped"]:
+                        worn_category = item.get("Worn", "Unknown")
+                        title = item.get("Title", "Unknown")
+                        quality_code = item.get("QualityCode", "default")
+                        tag = item.get("Tag", "")
+
+                        # ✅ Standardize worn category names
+                        worn_category = {
+                            "ring1": "Ring", "ring2": "Ring",
+                            "sweapon1": "Left hand", "weapon1": "Left hand",
+                            "sweapon2": "Offhand", "weapon2": "Offhand",
+                            "body": "Armor", "gloves": "Gloves",
+                            "belt": "Belt", "helmet": "Helmet",
+                            "boots": "Boots", "amulet": "Amulet"
+                        }.get(worn_category, worn_category)
+
+                        # ✅ Set colored title
+                        color = quality_colors.get(quality_code, "white")
+                        if quality_code in ["q_magic", "q_rare", "q_crafted"]:
+                            formatted_tag = f" {tag}" if tag else ""
+                            colored_title = f"<span style='color: {color};'>{quality_code.split('_')[1].capitalize()}{formatted_tag}</span>"
+                        else:
+                            colored_title = f"<span style='color: {color};'>{title}</span>"
+
+                        equipment_titles[worn_category][colored_title] += 1
+
+                    # ✅ Convert equipment data to a readable string
+                    skill_data["Equipment"] = ", ".join([
+                        f"{worn}: {title} x{count}" if count > 1 else f"{worn}: {title}"
+                        for worn, titles in equipment_titles.items()
+                        for title, count in titles.items()
+                    ])
+
+                    # ✅ Process mercenary info
+                    mercenary_type = char_data.get("MercenaryType", "No mercenary")
+                    readable_mercenary, _ = map_readable_names(mercenary_type)
+                    mercenary_equipment = ", ".join(
+                        [item.get("Title", "Unknown") for item in char_data.get("MercenaryEquipped", [])]
+                    ) if char_data.get("MercenaryEquipped") else "No equipment"
+
+                    skill_data["Mercenary"] = readable_mercenary
+                    skill_data["MercenaryEquipment"] = mercenary_equipment
+
+                    all_data.append(skill_data)
+
+            return pd.DataFrame(all_data).fillna(0)  # ✅ Fill missing skills with 0
+
+        # ✅ Load the data
+        df = load_data(filtered_characters)
+
+        # Define skill columns (exclude non-skill columns)
+        skill_columns = [col for col in df.columns if col not in ['Name', 'Class', 'Level', 'Dead', 'Skills', 'Equipment', 'Mercenary', 'MercenaryEquipment']]
+
+        # Perform PCA
+        pca = PCA(n_components=2)
+        reduced_data = pca.fit_transform(df[skill_columns])
+
+        # Perform KMeans clustering
+#        from sklearn.preprocessing import MinMaxScaler
+#        scaler = MinMaxScaler()
+#        df[skill_columns] = scaler.fit_transform(df[skill_columns])
+#        df['Cluster'] = scaler(df[skill_columns])
+
+####    This was the old way, declaring number of clusters for each class
+#        kmeans = KMeans(n_clusters=howmany_clusters, max_iter=500, random_state=42)
+#        df['Cluster'] = kmeans.fit_predict(df[skill_columns])
+
+####    Characters that hat 80 % skill points in common
+#        from sklearn.metrics.pairwise import cosine_similarity
+#        import numpy as np
+
+        # Extract skill data as array
+#        skill_matrix = df[skill_columns].to_numpy()
+
+        # Compute similarity matrix (cosine similarity works well for distributions)
+#        similarity_matrix = cosine_similarity(skill_matrix)
+
+        # Create an array for cluster labels, initialized as -1 (unassigned)
+#        cluster_labels = np.full(len(df), -1)
+#        cluster_id = 0
+
+        # Assign clusters based on 0.8 similarity threshold
+#        threshold = 0.55
+#        for i in range(len(df)):
+#            if cluster_labels[i] == -1:  # if not assigned yet
+                # Find all characters similar enough to character i
+#                similar_indices = np.where(similarity_matrix[i] >= threshold)[0]
+#                if len(similar_indices) > 1:
+#                    cluster_labels[similar_indices] = cluster_id
+#                    cluster_id += 1
+
+        # Assign "Miscellaneous" cluster for unassigned (-1)
+#        misc_indices = np.where(cluster_labels == -1)[0]
+#        if len(misc_indices) > 0:
+#            cluster_labels[misc_indices] = cluster_id
+#            cluster_id += 1
+
+#        df['Cluster'] = cluster_labels
+#        print(f"[{what_class}] Created {cluster_id} clusters with 80% skill similarity.")
+####    End points-in-common comparrison
+
+####    Variable similarity thresholds
+# Define class-specific similarity thresholds
+        similarity_thresholds = {
+            "Barbarian": 0.70,
+            "Druid": 0.60,
+            "Amazon": 0.65,
+            "Assassin": 0.65,
+            "Necromancer": 0.70,
+            "Paladin": 0.70,
+            "Sorceress": 0.65
+        }
+
+        def similarity_cluster(df, skill_columns, what_class):
+            from sklearn.metrics.pairwise import cosine_similarity
+            import numpy as np
+
+            # Select threshold for this class (default to 0.6 if not in dict)
+            threshold = similarity_thresholds.get(what_class, 0.6)
+            print(f"[{what_class}] Using similarity threshold: {threshold}")
+
+            skill_matrix = df[skill_columns].to_numpy()
+            similarity_matrix = cosine_similarity(skill_matrix)
+
+            cluster_labels = np.full(len(df), -1)
+            cluster_id = 0
+
+            for i in range(len(df)):
+                if cluster_labels[i] == -1:  # Not assigned yet
+                    similar_indices = np.where(similarity_matrix[i] >= threshold)[0]
+                    if len(similar_indices) > 1:
+                        cluster_labels[similar_indices] = cluster_id
+                        cluster_id += 1
+
+            # Miscellaneous cluster for unassigned
+            misc_indices = np.where(cluster_labels == -1)[0]
+            if len(misc_indices) > 0:
+                cluster_labels[misc_indices] = cluster_id
+                cluster_id += 1
+
+            df['Cluster'] = cluster_labels
+            print(f"[{what_class}] Clusters formed: {cluster_id}")
+            return df
+
+        df = similarity_cluster(df, skill_columns, what_class)
+####    End varying threshold
+
+#        kmeans = KMeans(n_clusters=howmany_clusters, max_iter=500, init='k-means++', random_state=42)
+#        df['Cluster'] = kmeans.fit_predict(df[skill_columns])
+
+#        import matplotlib.pyplot as plt
+#        from sklearn.cluster import KMeans
+
+        # Try multiple k values
+#        inertia = []
+#        k_range = range(2, 15)  # Test different k values
+
+#        for k in k_range:
+#            kmeans = KMeans(n_clusters=k, init='k-means++', random_state=42)
+#            kmeans.fit(df[skill_columns])
+#            inertia.append(kmeans.inertia_)  # Inertia = Sum of squared distances to cluster centers
+
+        # Plot the elbow curve
+#        plt.figure(figsize=(8, 5))
+#        plt.plot(k_range, inertia, marker='o')
+#        plt.xlabel("Number of Clusters (k)")
+#        plt.ylabel("Inertia (Within-Cluster Sum of Squares)")
+#        plt.title("Elbow Method for Optimal k")
+#        plt.show()
+
+
+        # Calculate the average points invested in skills per cluster
+        df['Total_Points'] = df[skill_columns].sum(axis=1)
+        cluster_averages = df.groupby('Cluster')['Total_Points'].mean().reset_index()
+        cluster_averages.columns = ['Cluster', 'Avg_Points']
+
+        # Merge the averages back into the main DataFrame
+        df = pd.merge(df, cluster_averages, on='Cluster')
+
+        # Get skill averages per cluster
+        skill_averages = df.groupby('Cluster')[skill_columns].mean()
+
+        # Identify the top skills per cluster with their average points
+        top_skills_with_avg = skill_averages.apply(lambda x: [(skill, round(x[skill], 2)) for skill in x.nlargest(howmany_skills).index], axis=1)
+
+        # Calculate the correct percentages for each cluster
+        cluster_counts = df['Cluster'].value_counts(normalize=True) * 100
+        df['Percentage'] = df['Cluster'].map(cluster_counts)
+
+        # Map clusters to meaningful names (top skills with average points)
+        cluster_labels = {i: ", ".join([f"{skill} ({avg})" for skill, avg in skills]) for i, skills in enumerate(top_skills_with_avg)}
+        df['Cluster_Label'] = df['Cluster'].map(cluster_labels)
+
+        # Counters for classes, runewords, uniques, and set items
+        class_counts = {}
+        runeword_counter = Counter()
+        unique_counter = Counter()
+        set_counter = Counter()
+        synth_counter = Counter()
+        crafted_counters = {
+            "Rings": Counter(),
+            "Weapons and Shields": Counter(),
+            "Arrows": Counter(),
+            "Bolts": Counter(),
+            "Body Armor": Counter(),
+            "Gloves": Counter(),
+            "Belts": Counter(),
+            "Helmets": Counter(),
+            "Boots": Counter(),
+            "Amulets": Counter(),
+        }
+        magic_counters = {
+            "Rings": Counter(),
+            "Weapons and Shields": Counter(),
+            "Arrows": Counter(),
+            "Bolts": Counter(),
+            "Body Armor": Counter(),
+            "Gloves": Counter(),
+            "Belts": Counter(),
+            "Helmets": Counter(),
+            "Boots": Counter(),
+            "Amulets": Counter(),
+        }
+        rare_counters = {
+            "Rings": Counter(),
+            "Weapons and Shields": Counter(),
+            "Arrows": Counter(),
+            "Bolts": Counter(),
+            "Body Armor": Counter(),
+            "Gloves": Counter(),
+            "Belts": Counter(),
+            "Helmets": Counter(),
+            "Boots": Counter(),
+            "Amulets": Counter(),
+        }
+        
+        synth_sources = {}  # Maps item names to all synth items that used them
+
+        runeword_users = {}
+        unique_users = {}
+        set_users = {}
+        synth_users = {}
+        crafted_users = {category: {} for category in crafted_counters}  # Ensure all categories exist
+        rare_users = {category: {} for category in crafted_counters}  # Ensure all categories exist
+        magic_users = {category: {} for category in crafted_counters}  # Ensure all categories exist
+
+        all_characters = []
+        sorted_just_socketed_runes = {}
+        sorted_just_socketed_excluding_runewords_runes = {}
+        all_other_items = {}
+
+        def process_all_characters(filtered_characters):
+            """Processes all characters from the single JSON file instead of iterating through folders."""
+
+            # Dictionary to store class counts
+            class_counts = Counter()
+
+            # Counters for different item types
+            runeword_counter = Counter()
+            unique_counter = Counter()
+            set_counter = Counter()
+            synth_counter = Counter()
+            crafted_counters = defaultdict(Counter)
+
+            # User tracking dictionaries
+            runeword_users = defaultdict(list)
+            unique_users = defaultdict(list)
+            set_users = defaultdict(list)
+            synth_users = defaultdict(list)
+            crafted_users = defaultdict(lambda: defaultdict(list))
+#            synth_sources = defaultdict(list)
+
+            def categorize_worn_slot(worn_category, text_tag):
+                if worn_category in ["sweapon1", "weapon1", "sweapon2", "weapon2"]:
+                    if text_tag == "Arrows":
+                        return "Arrows"
+                    elif text_tag == "Bolts":
+                        return "Bolts"
+                    else:
+                        return "Weapons and Shields"
+
+                worn_category_map = {
+                    "ring1": "Ring", "ring2": "Ring",
+                    "body": "Armor",
+                    "gloves": "Gloves",
+                    "belt": "Belt",
+                    "helmet": "Helmet",
+                    "boots": "Boots",
+                    "amulet": "Amulets",
+                }
+
+                return worn_category_map.get(worn_category, "Other")  # Default to "Other"
+
+            # ✅ Iterate through all characters in the JSON file
+            for char_data in filtered_characters:
+                char_name = char_data.get("Name", "Unknown")
+                char_class = char_data.get("Class", "Unknown")
+                char_level = char_data.get("Stats", {}).get("Level", "Unknown")
+
+                # ✅ Count classes
+                class_counts[char_class] += 1
+
+                # ✅ Process equipped items
+                for item in char_data.get("Equipped", []):
+                    worn_category = categorize_worn_slot(item.get("Worn", ""), item.get("TextTag", ""))
+                    character_info = {"name": char_name, "class": char_class, "level": char_level}
+
+                    # ✅ Process Synthesized items
+                    if "synth" in item.get("Tag", "").lower() or "synth" in item.get("TextTag", "").lower():
+                        item_title = item["Title"]
+                        synth_counter[item_title] += 1
+                        synth_users.setdefault(item_title, []).append(character_info)
+
+                        # Process SynthesisedFrom property
+                        synthesized_from = item.get("SynthesisedFrom", [])
+                        all_related_items = [item_title] + synthesized_from
+                        for source_item in all_related_items:
+#                            print(f"{source_item}")
+                            synth_sources.setdefault(source_item, []).append({
+                                "name": char_name,
+                                "class": char_class,
+                                "level": char_level,
+                                "synthesized_item": item_title
+                            })
+#                        print(f"{synth_sources}")
+
+                    # ✅ Process item qualities
+                    quality_code = item.get("QualityCode", "")
+                    if item.get("QualityCode") == "q_runeword":
+                        title = item["Title"]
+                        if title == "2693":
+                            title = "Delirium"
+                        elif title == "-26":
+                            title = "Pattern2"
+
+                        runeword_counter[title] += 1
+
+                        base = item.get("Tag", "Unknown")
+                        if title not in runeword_users:
+                            runeword_users[title] = {}
+                        if base not in runeword_users[title]:
+                            runeword_users[title][base] = []
+                        runeword_users[title][base].append(character_info)
+
+
+                    elif quality_code == "q_unique":
+                        unique_counter[item["Title"]] += 1
+                        unique_users[item["Title"]].append(character_info)
+
+                    elif quality_code == "q_set":
+                        set_counter[item["Title"]] += 1
+                        set_users[item["Title"]].append(character_info)
+
+                    elif quality_code == "q_crafted":
+                        crafted_counters[worn_category][item["Title"]] += 1
+                        crafted_users[worn_category][item["Title"]].append(character_info)
+
+            return (
+                class_counts, runeword_counter, unique_counter, set_counter, synth_counter,
+                runeword_users, unique_users, set_users, synth_users, crafted_counters, crafted_users
+            )
+
+        def process_all_characters_for_magic_rare(filtered_characters):
+            """Processes all characters for magic and rare items using the single JSON file."""
+
+            magic_counters = defaultdict(Counter)
+            rare_counters = defaultdict(Counter)
+            magic_users = defaultdict(lambda: defaultdict(list))
+            rare_users = defaultdict(lambda: defaultdict(list))
+
+            def categorize_worn_slot(worn_category, text_tag):
+                if worn_category in ["sweapon1", "weapon1", "sweapon2", "weapon2"]:
+                    if text_tag == "Arrows":
+                        return "Arrows"
+                    elif text_tag == "Bolts":
+                        return "Bolts"
+                    else:
+                        return "Weapons and Shields"
+
+                worn_category_map = {
+                    "ring1": "Ring", "ring2": "Rings",
+                    "body": "Armor",
+                    "gloves": "Gloves",
+                    "belt": "Belts",
+                    "helmet": "Helmets",
+                    "boots": "Boots",
+                    "amulet": "Amulets",
+                }
+
+                return worn_category_map.get(worn_category, "Other")  # Default to "Other"
+
+            # ✅ Iterate through all characters
+            for char_data in filtered_characters:
+                char_name = char_data.get("Name", "Unknown")
+                char_class = char_data.get("Class", "Unknown")
+                char_level = char_data.get("Stats", {}).get("Level", "Unknown")
+
+                # ✅ Process equipped items
+                for item in char_data.get("Equipped", []):
+                    worn_category = categorize_worn_slot(item.get("Worn", ""), item.get("TextTag", ""))
+                    character_info = {"name": char_name, "class": char_class, "level": char_level}
+
+                    quality_code = item.get("QualityCode", "")
+                    if quality_code == "q_magic":
+                        magic_counters[worn_category][item["Title"]] += 1
+                        magic_users[worn_category][item["Title"]].append(character_info)
+
+                    elif quality_code == "q_rare":
+                        rare_counters[worn_category][item["Title"]] += 1
+                        rare_users[worn_category][item["Title"]].append(character_info)
+
+            return magic_counters, magic_users, rare_counters, rare_users
+
+        class_counts, runeword_counter, unique_counter, set_counter, synth_counter, runeword_users, unique_users, set_users, synth_users, crafted_counters, crafted_users = process_all_characters(filtered_characters)
+
+        magic_counters, magic_users, rare_counters, rare_users = process_all_characters_for_magic_rare(filtered_characters)
+
+        # Get the most common items
+        most_common_runewords = runeword_counter.most_common(10)
+        most_common_uniques = unique_counter.most_common(10)
+        most_common_set_items = set_counter.most_common(10)
+
+        # Get all the items
+        all_runewords = runeword_counter.most_common(150)
+        all_uniques = unique_counter.most_common(450)
+        all_set = set_counter.most_common(150)
+        all_synth = synth_counter.most_common(150)
+
+        # Get the least common items
+        least_common_runewords = runeword_counter.most_common()[:-11:-1]
+        least_common_uniques = unique_counter.most_common()[:-11:-1]
+        least_common_set_items = set_counter.most_common()[:-11:-1]
+
+        def slugify(name):
+            return name.lower().replace(" ", "-").replace("'", "").replace('"', "")
+
+        # Generate list items
+        def generate_list_items(items):
+            return ''.join(
+                f'<li><a href="#{slug}">{name}</a>: {count}</li>'
+                for item, count in items
+                for name in [  # map item IDs to readable names
+                    "Delirium" if item == "2693" else 
+                    "Pattern2" if item == "-26" else 
+                    item
+                ]
+                for slug in [slugify(name)]
+            )
+
+        def generate_all_list_items(counter, character_data):
+            if not isinstance(character_data, dict):
+                print("Error: character_data is not a dict! Type:", type(character_data))
+                return ""
+
+            items_html = ""
+
+            for item, count in counter:
+                display_item = "Delirium" if item == "2693" else "Pattern2" if item == "-26" else item
+                anchor_id = slugify(display_item)
+
+                character_info = character_data.get(item)
+
+                # 🧠 If this item has nested dicts (base → [characters]), it's a runeword
+                if isinstance(character_info, dict):
+                    base_html = ""
+                    for base, characters in sorted(character_info.items(), key=lambda kv: len(kv[1]), reverse=True):
+                        characters_html = "".join(
+                            f""" 
+                            <div class="character-info">
+                                <div class="character-link">
+                                    <a href="https://beta.pathofdiablo.com/armory?name={char['name']}" target="_blank">
+                                        {char['name']}
+                                    </a>
+                                </div>
+                                <div>Level {char['level']} {char['class']}</div>
+                                <div class="hover-trigger" data-character-name="{char['name']}"></div>
+                            </div>
+                            <div class="character"><div class="popup hidden"></div></div>
+                            """ for char in characters
+                        )
+
+                        base_html += f"""
+                        <button class="collapsible">
+                            <img src="icons/open-grey.png" class="icon-small open-icon hidden">
+                            <img src="icons/closed-grey.png" class="icon-small close-icon">
+                            <strong>{base} ({len(characters)} users)</strong>
+                        </button>
+                        <div class="content" id="{slugify(f"{display_item}-{base}")}">
+                            {characters_html or "<p>No characters using this base.</p>"}
+                        </div>
+                        """
+
+                    items_html += f"""
+                    <button class="collapsible">
+                        <img src="icons/open-grey.png" class="icon-small open-icon hidden">
+                        <img src="icons/closed-grey.png" class="icon-small close-icon">
+                        <strong>
+                            <a href="#{anchor_id}" class="anchor-link">
+                                {display_item} ({count} users)
+                            </a>
+                        </strong>
+                    </button>
+                    <div class="content" id="{anchor_id}">
+                        {base_html or "<p>No characters using this item.</p>"}
+                    </div>
+                    """
+
+                else:
+                    # 🧠 Flat list: uniques, sets, synths
+                    character_list = character_info or []
+
+                    character_list_html = "".join(
+                        f""" 
+                        <div class="character-info">
+                            <div class="character-link">
+                                <a href="https://beta.pathofdiablo.com/armory?name={char['name']}" target="_blank">
+                                    {char['name']}
+                                </a>
+                            </div>
+                            <div>Level {char['level']} {char['class']}</div>
+                            <div class="hover-trigger" data-character-name="{char['name']}"></div>
+                        </div>
+                        <div class="character"><div class="popup hidden"></div></div>
+                        """ for char in character_list
+                    )
+
+                    items_html += f"""
+                    <button class="collapsible">
+                        <img src="icons/open-grey.png" class="icon-small open-icon hidden">
+                        <img src="icons/closed-grey.png" class="icon-small close-icon">
+                        <strong>
+                            <a href="#{anchor_id}" class="anchor-link">
+                                {display_item} ({count} users)
+                            </a>
+                        </strong>
+                    </button>
+                    <div class="content" id="{anchor_id}">
+                        {character_list_html or "<p>No characters using this item.</p>"}
+                    </div>
+                    """
+
+            return items_html
+
+        def generate_synth_list_items(counter: Counter, synth_users: dict):
+            items_html = ""
+    #        for item, count in counter.items():
+            for item, count in sorted(counter.items(), key=lambda x: (-x[1], x[0])):
+
+                character_list = synth_users.get(item, [])  # Directly fetch correct list
+
+                character_list_html = "".join(
+                    f""" 
+                    <div class="character-info">
+                        <div class="character-link">
+                            <a href="https://beta.pathofdiablo.com/armory?name={char["name"]}" target="_blank">
+                                {char["name"]}
+                            </a>
+                        </div>
+                        <div>Level {char["level"]} {char["class"]}</div>
+                        <div class="hover-trigger" data-character-name="{char["name"]}"></div>
+                    </div>
+                    <div class="character">
+                        <div class="popup hidden"></div> <!-- No iframe inside initially -->
+                    </div>
+                    """ for char in character_list
+                )
+
+                anchor_id = slugify(item)
+                items_html += f"""
+                <button class="collapsible">
+                    <img src="icons/open-grey.png" alt="All Runewords Open" class="icon-small open-icon hidden">
+                    <img src="icons/closed-grey.png" alt="Runewords Close" class="icon-small close-icon">
+                    <strong>
+                    <a href="#synth-{anchor_id}" class="anchor-link">
+                        {item} ({count} users)
+                    </a>
+                    </strong>
+                </button>
+                <div class="content" id="synth-{anchor_id}">
+                    {character_list_html if character_list else "<p>No characters using this item.</p>"}
+                </div>
+                """
+            
+            return items_html
+
+        synth_user_count = sum(len(users) for users in synth_users.values())
+
+        def generate_synth_source_list(synth_sources):
+            items_html = ""
+
+    #        for source_item, characters in synth_sources.items():
+            for source_item, characters in sorted(synth_sources.items(), key=lambda x: (-len(x[1]), x[0])):
+        
+                character_list_html = "".join(
+                    f"""
+                    <div class="character-info">
+                        <div class="character-link">
+                            <a href="https://beta.pathofdiablo.com/armory?name={char["name"]}" target="_blank">
+                                {char["name"]}
+                            </a>
+                        </div>
+                        <div>Level {char["level"]} {char["class"]}</div>
+                        <div>Used in: <strong>{char["synthesized_item"]}</strong></div>
+                        <div class="hover-trigger" data-character-name="{char["name"]}"></div>
+                    </div>
+                    <div class="character">
+                        <div class="popup hidden"></div> <!-- No iframe inside initially -->
+                    </div>
+                    """ for char in characters
+                )
+
+                anchor_id = slugify(source_item)
+                items_html += f"""
+                <button class="collapsible">
+                    <img src="icons/open-grey.png" alt="All Runewords Open" class="icon-small open-icon hidden">
+                    <img src="icons/closed-grey.png" alt="Runewords Close" class="icon-small close-icon">
+                    <strong>
+                    <a href="#synthsource-{anchor_id}" class="anchor-link">
+                        {source_item} (Found in {len(characters)} Items)
+                    </a>
+                    </strong>
+                </button>
+                <div class="content" id="synthsource-{anchor_id}">
+                    {character_list_html if characters else "<p>No characters using this item.</p>"}
+                </div>
+                """
+
+            return items_html
+        synth_source_user_count = sum(len(users) for users in synth_sources.values())
+
+
+        def generate_crafted_list_items(crafted_counters, crafted_users):
+            items_html = ""
+
+            for worn_category, counter in crafted_counters.items():
+                if not counter:  # Skip empty categories
+                    continue
+                
+                # Collect all characters in this category
+                category_users = []
+                for item, count in counter.items():
+                    category_users.extend(crafted_users.get(worn_category, {}).get(item, []))
+
+                # Skip categories with no users
+                if not category_users:
+                    continue
+
+                # Create the list of all users in this category
+                character_list_html = "".join(
+                    f"""
+                    <div class="character-info">
+                        <div class="character-link">
+                            <a href="https://beta.pathofdiablo.com/armory?name={char["name"]}" target="_blank">
+                                {char["name"]}
+                            </a>
+                        </div>
+                        <div>Level {char["level"]} {char["class"]}</div>
+                        <div class="hover-trigger" data-character-name="{char["name"]}"></div>
+                    </div>
+                    <div class="character">
+                        <div class="popup hidden"></div> <!-- No iframe inside initially -->
+                    </div>
+                    """ for char in category_users
+                )
+
+                # Create a collapsible button for each category
+                items_html += f"""
+                <button class="collapsible">
+                    <img src="icons/open-grey.png" alt="All Runewords Open" class="icon-small open-icon hidden">
+                    <img src="icons/closed-grey.png" alt="Runewords Close" class="icon-small close-icon">
+                    <strong>Crafted {worn_category} ({len(category_users)} users)</strong>
+                </button>
+                <div class="content">
+                    {character_list_html if category_users else "<p>No characters using crafted items in this category.</p>"}
+                </div>
+                """
+
+            return items_html
+        craft_user_count = sum(len(users) for users in crafted_users.values())
+
+
+        def generate_magic_list_items(magic_counters, magic_users):
+            items_html = ""
+
+            for worn_category, counter in magic_counters.items():
+                if not counter:  # Skip empty categories
+                    continue
+                
+                # Collect all characters in this category
+                category_users = []
+                for item, count in counter.items():
+                    category_users.extend(magic_users.get(worn_category, {}).get(item, []))
+
+                # Skip categories with no users
+                if not category_users:
+                    continue
+
+                # Create the list of all users in this category
+                character_list_html = "".join(
+                    f"""
+                    <div class="character-info">
+                        <div class="character-link">
+                            <a href="https://beta.pathofdiablo.com/armory?name={char["name"]}" target="_blank">
+                                {char["name"]}
+                            </a>
+                        </div>
+                        <div>Level {char["level"]} {char["class"]}</div>
+                        <div class="hover-trigger" data-character-name="{char["name"]}"></div>
+                    </div>
+                    <div class="character">
+                        <div class="popup hidden"></div> <!-- No iframe inside initially -->
+                    </div>
+                    """ for char in category_users
+                )
+
+                # Create a collapsible button for each category
+                items_html += f"""
+                <button class="collapsible">
+                    <img src="icons/open-grey.png" alt="All Runewords Open" class="icon-small open-icon hidden">
+                    <img src="icons/closed-grey.png" alt="Runewords Close" class="icon-small close-icon">
+                    <strong>Magic {worn_category} ({len(category_users)} users)</strong>
+                </button>
+                <div class="content">
+                    {character_list_html if category_users else "<p>No characters using magic items in this category.</p>"}
+                </div>
+                """
+
+            return items_html
+        magic_user_count = sum(len(users) for users in magic_users.values())
+
+
+        def generate_rare_list_items(rare_counter, rare_users):
+            items_html = ""
+
+            for worn_category, counter in rare_counter.items():
+                if not counter:  # Skip empty categories
+                    continue
+                
+                # Collect all characters in this category
+                category_users = []
+                for item, count in counter.items():
+                    category_users.extend(rare_users.get(worn_category, {}).get(item, []))
+
+                # Skip categories with no users
+                if not category_users:
+                    continue
+
+                # Create the list of all users in this category
+                character_list_html = "".join(
+                    f"""
+                    <div class="character-info">
+                        <div class="character-link">
+                            <a href="https://beta.pathofdiablo.com/armory?name={char["name"]}" target="_blank">
+                                {char["name"]}
+                            </a>
+                        </div>
+                        <div>Level {char["level"]} {char["class"]}</div>
+                        <div class="hover-trigger" data-character-name="{char["name"]}"></div>
+                    </div>
+                    <div class="character">
+                        <div class="popup hidden"></div> <!-- No iframe inside initially -->
+                    </div>
+                    """ for char in category_users
+                )
+
+                # Create a collapsible button for each category
+                items_html += f"""
+                <button class="collapsible">
+                    <img src="icons/open-grey.png" alt="All Runewords Open" class="icon-small open-icon hidden">
+                    <img src="icons/closed-grey.png" alt="Runewords Close" class="icon-small close-icon">
+                    <strong>Rare {worn_category} ({len(category_users)} users)</strong>
+                </button>
+                <div class="content">
+                    {character_list_html if category_users else "<p>No characters using Rare items in this category.</p>"}
+                </div>
+                """
+
+            return items_html
+        rare_user_count = sum(len(users) for users in rare_users.values())
+
+        def socket_html(filtered_characters):
+            """Generates socketed item analysis from sc_ladder.json."""
+
+            rune_names = {
+                "El Rune", "Eld Rune", "Tir Rune", "Nef Rune", "Eth Rune", "Ith Rune", "Tal Rune", "Ral Rune", "Ort Rune", "Thul Rune", "Amn Rune", "Sol Rune",
+                "Shael Rune", "Dol Rune", "Hel Rune", "Io Rune", "Lum Rune", "Ko Rune", "Fal Rune", "Lem Rune", "Pul Rune", "Um Rune", "Mal Rune", "Ist Rune",
+                "Gul Rune", "Vex Rune", "Ohm Rune", "Lo Rune", "Sur Rune", "Ber Rune", "Jah Rune", "Cham Rune", "Zod Rune"
+            }
+
+            # ✅ Categorization
+            all_items = []
+            socketed_items = []
+            items_excluding_runewords = []
+            just_socketed = []
+            just_socketed_excluding_runewords = []
+            facet_elements = defaultdict(list)
+            shields_for_skulls = []
+            weapons_for_skulls = []
+            helmets_for_skulls = []
+            armor_for_skulls = []
+            jewel_counts = Counter()
+            jewel_groupings = {"magic": [], "rare": []}
+
+            # ✅ Function to extract Rainbow Facet element type
+            def extract_element(item):
+                if item.get('Title') == 'Rainbow Facet':
+                    element_types = ["fire", "cold", "lightning", "poison", "physical", "magic"]
+                    for element in element_types:
+                        for prop in item.get('PropertyList', []):
+                            if element in prop.lower():
+                                return element.capitalize()
+                return item.get('Title', 'Unknown')  # Use title if not "Rainbow Facet"
+
+            # ✅ Process all characters
+            for char_data in filtered_characters:
+                for item in char_data.get('Equipped', []):
+
+                    # ✅ Categorize Perfect Skulls
+                    worn_category = item.get('Worn', '')
+                    for socketed_item in item.get('Sockets', []):
+                        if socketed_item.get('Title') == "Perfect Skull":
+                            if worn_category == 'helmet':
+                                helmets_for_skulls.append(socketed_item)
+                            elif worn_category == 'body':
+                                armor_for_skulls.append(socketed_item)
+                            elif worn_category in ['weapon1', 'weapon2', 'sweapon1', 'sweapon2']:
+                                if any("Block" in prop for prop in item.get('PropertyList', [])):  # ✅ Identify shields
+                                    shields_for_skulls.append(socketed_item)
+                                else:
+                                    weapons_for_skulls.append(socketed_item)
+
+                    # ✅ Process socketed items
+                    if item.get('SocketCount', '0') > '0':  # Item has sockets
+                        all_items.append(item)
+                        if item.get('QualityCode') != 'q_runeword':  # Exclude runewords
+                            items_excluding_runewords.append(item)
+
+                        for socketed_item in item.get('Sockets', []):
+                            element = extract_element(socketed_item)
+                            socketed_items.append(socketed_item)
+                            facet_elements[element].append(socketed_item)
+                            just_socketed.append(socketed_item)
+
+                            # ✅ Categorize Magic & Rare Jewels
+                            quality_code = socketed_item.get('QualityCode', '')
+                            if quality_code == "q_magic":
+                                socketed_item["GroupedTitle"] = "Misc. Magic Jewels"
+                            elif quality_code == "q_rare":
+                                socketed_item["GroupedTitle"] = "Misc. Rare Jewels"
+                            else:
+                                socketed_item["GroupedTitle"] = socketed_item.get("Title", "Unknown")
+
+                            if item.get('QualityCode') != 'q_runeword':
+                                just_socketed_excluding_runewords.append(socketed_item)
+
+            # ✅ Function to count socketed items
+            def count_items_by_type(items):
+                rune_counter = Counter()
+                non_rune_counter = Counter()
+                magic_jewel_counter = Counter()
+                rare_jewel_counter = Counter()
+                facet_counter = defaultdict(lambda: {"count": 0, "perfect": 0})
+
+                for item in items:
+                    title = item.get('Title', 'Unknown')
+                    quality = item.get('QualityCode', '')
+
+                    if title in rune_names:
+                        rune_counter[title] += 1
+                    elif "Rainbow Facet" in title:
+                        element = extract_element(item)
+                        facet_counter[element]["count"] += 1
+                        properties = item.get('PropertyList', [])
+                        if any("+5" in prop for prop in properties) and any("-5" in prop for prop in properties):
+                            facet_counter[element]["perfect"] += 1
+                    elif quality == "q_magic":
+                        has_splash = any("splash" in prop.lower() for prop in item.get("PropertyList", []))
+                        has_ias = any("attack speed" in prop.lower() for prop in item.get("PropertyList", []))
+                        has_ed = any("enhanced damage" in prop.lower() for prop in item.get("PropertyList", []))
+                        has_iassplash = has_ias and has_splash
+                        has_iased = has_ias and has_ed
+                        magic_jewel_counter["Misc. Magic Jewels"] += 1
+                        if has_splash:
+                            magic_jewel_counter["splash"] += 1
+                        if has_ias:
+                            magic_jewel_counter["attack speed"] += 1
+                        if has_ed:
+                            magic_jewel_counter["enhanced damage"] += 1
+                        if has_iassplash:
+                            magic_jewel_counter["iassplash"] += 1
+                        if has_iased:
+                            magic_jewel_counter["iased"] += 1
+                    elif quality == "q_rare":
+                        has_splash = any("splash" in prop.lower() for prop in item.get("PropertyList", []))
+                        has_ed = any("enhanced damage" in prop.lower() for prop in item.get("PropertyList", []))
+                        rare_jewel_counter["Misc. Rare Jewels"] += 1
+                        if has_splash:
+                            rare_jewel_counter["splash"] += 1
+                        if has_ed:
+                            rare_jewel_counter["enhanced damage"] += 1
+                    else:
+                        non_rune_counter[title] += 1
+
+                return rune_counter, non_rune_counter, magic_jewel_counter, rare_jewel_counter, facet_counter
+
+            # ✅ Unpacking correctly for all five values
+            just_socketed_runes, just_socketed_non_runes, just_socketed_magic, just_socketed_rare, just_socketed_facets = count_items_by_type(just_socketed)
+            just_socketed_excluding_runewords_runes, just_socketed_excluding_runewords_non_runes, just_socketed_excluding_runewords_magic, just_socketed_excluding_runewords_rare, just_socketed_excluding_runewords_facets = count_items_by_type(just_socketed_excluding_runewords)
+
+            # ✅ Sort items for output
+            sorted_just_socketed_runes = just_socketed_runes.most_common()
+            sorted_just_socketed_excluding_runewords_runes = just_socketed_excluding_runewords_runes.most_common()
+
+            # ✅ Combine non-runes, magic, rare, and facets into a single list
+            all_other_items = [
+                *(f"{item}: {count}" for item, count in just_socketed_excluding_runewords_non_runes.items()),
+                f"Misc. Magic Jewels: {just_socketed_excluding_runewords_magic['Misc. Magic Jewels']} "
+                f"({just_socketed_excluding_runewords_magic['splash']} Splash, {just_socketed_excluding_runewords_magic['attack speed']} IAS, "
+                f"{just_socketed_excluding_runewords_magic['enhanced damage']} ED; {just_socketed_excluding_runewords_magic['iassplash']} IAS/Splash, {just_socketed_excluding_runewords_magic['iased']} IAS/ED)",
+                f"Misc. Rare Jewels: {just_socketed_excluding_runewords_rare['Misc. Rare Jewels']} "
+                f"({just_socketed_excluding_runewords_rare['splash']} Splash, {just_socketed_excluding_runewords_rare['enhanced damage']} ED)",
+                *(f"Rainbow Facet ({element}): {counts['count']} ({counts['perfect']} Perfect)" for element, counts in just_socketed_excluding_runewords_facets.items())
+            ]
+
+            return (
+                format_socket_html_runes(sorted_just_socketed_runes),
+                format_socket_html_runes(sorted_just_socketed_excluding_runewords_runes),
+                format_socket_html(all_other_items)
+            )
+
+        def format_socket_html(counter_data):
+            """Formats socketed items as an HTML table or list."""
+            if isinstance(counter_data, list):  # If it's a list, format as an unordered list
+                items = "".join(f"<li>{item}</li>" for item in counter_data)
+                return f"<ul>{items}</ul>"
+
+            elif isinstance(counter_data, Counter):  # If it's a Counter, format as a table
+                rows = "".join(f"<tr><td>{item}</td><td>{count}</td></tr>" for item, count in counter_data.items())
+                return f"<table><tr><th>Item</th><th>Count</th></tr>{rows}</table>"
+
+            elif isinstance(counter_data, dict):  # If it's a dict (e.g., facet counts), format as a list
+                items = "".join(f"<li>{item}: {count['count']} ({count['perfect']} perfect)</li>" for item, count in counter_data.items())
+                return f"<ul>{items}</ul>"
+
+            return ""  # Return empty string if there's no data
+
+        def format_socket_html_runes(counter_data):
+            """Formats socketed items as an HTML table or list."""
+            if isinstance(counter_data, list):  # If it's a list of tuples (like runes), format properly
+                items = "".join(f"<li>{item}: {count}</li>" for item, count in counter_data)
+                return f"<ul>{items}</ul>"
+
+            elif isinstance(counter_data, Counter):  # If it's a Counter, format as a table
+                rows = "".join(f"<tr><td>{item}</td><td>{count}</td></tr>" for item, count in counter_data.items())
+                return f"<table><tr><th>Item</th><th>Count</th></tr>{rows}</table>"
+
+            elif isinstance(counter_data, dict):  # If it's a dict (e.g., facet counts), format as a list
+                items = "".join(f"<li>{item}: {count['count']} ({count['perfect']} perfect)</li>" for item, count in counter_data.items())
+                return f"<ul>{items}</ul>"
+
+            return ""  # Return empty string if there's no data
+
+
+
+
+
+
+        def GetSCFunFacts(filtered_characters):
+            """Generates hardcore fun facts using hc_ladder.json."""
+            
+            # ✅ Extract alive characters (not dead)
+            alive_characters = [char for char in filtered_characters if not char.get("IsDead", True)]
+            undead_count = len(alive_characters)
+            character_count = len(filtered_characters)  # Total characters
+
+            # ✅ Function to generate the alive characters list
+            def GetTheLiving():
+                return "".join(
+                    f"""
+                    <div class="character-info">
+                        <div class="character-link">
+                            <a href="https://beta.pathofdiablo.com/armory?name={char.get("Name", "Unknown")}" target="_blank">
+                                {char.get("Name", "Unknown")}
+                            </a>
+                        </div>
+                        <div>Level {char.get("Stats", {}).get("Level", "N/A")}</div>
+                        <div class="hover-trigger" data-character-name="{char.get("Name", "Unknown")}"></div>
+                    </div>
+                    <div class="character">
+                        <div class="popup hidden"></div> <!-- No iframe inside initially -->
+                    </div>
+                    """ for char in alive_characters
+                )
+
+            alive_list_html = GetTheLiving()
+
+            # ✅ Function to get the top 5 characters for a given stat
+            def get_top_characters(stat_name):
+                ranked = sorted(
+                    filtered_characters,
+                    key=lambda c: c.get("Stats", {}).get(stat_name, 0) + c.get("Bonus", {}).get(stat_name, 0),
+                    reverse=True,
+                )[:5]  # Top 5
+
+                return "".join(
+                    f"""<li>&nbsp;&nbsp;&nbsp;&nbsp;
+                        <a href="https://beta.pathofdiablo.com/armory?name={char.get('Name', 'Unknown')}" target="_blank">
+                            {char.get('Name', 'Unknown')} ({char.get('Stats', {}).get(stat_name, 0) + char.get('Bonus', {}).get(stat_name, 0)})
+                        </a>
+                    </li>"""
+                    for char in ranked
+                )
+            # lists for median calculations
+            mf_values = []
+            gf_values = []
+            life_values = []
+            mana_values = []
+
+            # ✅ Get the top 5 for each stat
+            top_strength = get_top_characters("Strength")
+            top_dexterity = get_top_characters("Dexterity")
+            top_vitality = get_top_characters("Vitality")
+            top_energy = get_top_characters("Energy")
+            top_life = get_top_characters("Life")
+            top_mana = get_top_characters("Mana")
+
+            # ✅ Compute Magic Find (MF) and Gold Find (GF)
+            total_mf = 0
+            total_gf = 0
+            total_life = 0
+            total_mana = 0
+
+            for char in filtered_characters:
+                mf = char.get("Bonus", {}).get("MagicFind", 0) + \
+                    char.get("Bonus", {}).get("WeaponSetMain", {}).get("MagicFind", 0) + \
+                    char.get("Bonus", {}).get("WeaponSetOffhand", {}).get("MagicFind", 0)
+                gf = char.get("Bonus", {}).get("GoldFind", 0) + \
+                    char.get("Bonus", {}).get("WeaponSetMain", {}).get("GoldFind", 0) + \
+                    char.get("Bonus", {}).get("WeaponSetOffhand", {}).get("GoldFind", 0)
+                life = char.get("Stats", {}).get("Life", 0)
+                mana = char.get("Stats", {}).get("Mana", 0)
+
+                total_mf += mf
+                total_gf += gf
+                total_life += life
+                total_mana += mana
+
+                mf_values.append(mf)
+                gf_values.append(gf)
+                life_values.append(life)
+                mana_values.append(mana)
+
+            top_magic_find = get_top_characters("MagicFind")
+            top_gold_find = get_top_characters("GoldFind")
+
+            # ✅ Calculate averages
+            average_mf = total_mf / character_count if character_count > 0 else 0
+            average_gf = total_gf / character_count if character_count > 0 else 0
+            average_life = total_life / character_count if character_count > 0 else 0
+            average_mana = total_mana / character_count if character_count > 0 else 0
+
+            #calculate medians
+            median_mf = statistics.median(mf_values) if mf_values else 0
+            median_gf = statistics.median(gf_values) if gf_values else 0
+            median_life = statistics.median(life_values) if life_values else 0
+            median_mana = statistics.median(mana_values) if mana_values else 0
+
+            # ✅ Generate fun facts HTML
+            fun_facts_html = f"""
+        <h3>Hardcore Fun Facts <a href="#softcore-fun-facts" class="anchor-link"><img src="icons/anchor.png" alt="🔗" class="anchor-icon"></a></h3>
+                <h3>{undead_count} {what_class}'s out of {character_count} have not died</h3>
+                    <button type="button" class="collapsible sets-button">
+                        <img src="icons/Special_click.png" alt="Undead Open" class="icon open-icon hidden">
+                        <img src="icons/Special.png" alt="Undead Close" class="icon close-icon">
+                    </button>
+                    <div class="content">  
+                        <div id="special">{alive_list_html}</div>
+                    </div>
+            <br>
+
+            <!-- Strength & Dexterity Row -->
+            <div class="fun-facts-row">
+                <div class="fun-facts-column">
+                    <h3>Top 5 {what_class}'s with the Most Strength:</h3>
+                    <ul>{top_strength}</ul>
+                </div>
+                <div class="fun-facts-column">
+                    <h3>Top 5 {what_class}'s with the Most Dexterity:</h3>
+                    <ul>{top_dexterity}</ul>
+                </div>
+            </div>
+
+            <!-- Vitality & Energy Row -->
+            <div class="fun-facts-row">
+                <div class="fun-facts-column">
+                    <h3>Top 5 {what_class}'s with the Most Vitality:</h3>
+                    <ul>{top_vitality}</ul>
+                </div>
+                <div class="fun-facts-column">
+                    <h3>Top 5 {what_class}'s with the Most Energy:</h3>
+                    <ul>{top_energy}</ul>
+                </div>
+            </div>
+
+            <!-- Life & Mana Row -->
+            <div class="fun-facts-row">
+                <div class="fun-facts-column">
+                    <h3>Top 5 {what_class}'s with the Most Life:</h3>
+                    <ul>{top_life}</ul>
+                    <p><strong>Average Life:</strong> {average_life:.2f} | <strong>Median Life:</strong> {median_life:.2f}</p>
+                </div>
+                <div class="fun-facts-column">
+                    <h3>Top 5 {what_class}'s with the Most Mana:</h3>
+                    <ul>{top_mana}</ul>
+                    <p><strong>Average Mana:</strong> {average_mana:.2f} | <strong>Median Mana:</strong> {median_mana:.2f}</p>
+                </div>
+            </div>
+
+            <!-- Magic Find & Gold Find Row -->
+            <div class="fun-facts-row">
+                <div class="fun-facts-column">
+                    <h3>Top 5 {what_class}'s with the Most Magic Find:</h3>
+                    <ul>{top_magic_find}</ul>
+                    <p><strong>Average Magic Find:</strong> {average_mf:.2f} | <strong>Median:</strong> {median_mf:.2f}</p>
+                </div>
+                <div class="fun-facts-column">
+                    <h3>Top 5 {what_class}'s with the Most Gold Find:</h3>
+                    <ul>{top_gold_find}</ul>
+                    <p><strong>Average Gold Find:</strong> {average_gf:.2f} | <strong>Median:</strong> {median_gf:.2f}</p>
+                </div>
+            </div>
+            """
+
+            return fun_facts_html
+
+        # Load the consolidated JSON
+        # ✅ Load the single JSON file
+        with open("hc_ladder.json", "r") as file:
+            all_characters = json.load(file)
+        all_characters = [char for char in all_characters if isinstance(char, dict) and char.get("Stats", {}).get("Level", 0) >= 60]
+
+        fun_facts_html = GetSCFunFacts(filtered_characters)
+
+        def generate_maxed_skills_section(maxed_skills, all_characters):
+            section_html = ""
+            
+            # Sort skills by number of characters with 20 points
+            sorted_skills = sorted(maxed_skills.items(), key=lambda x: len(x[1]), reverse=True)
+
+            for skill_name, char_names in sorted_skills:
+                # Get full character info from all_characters
+                characters = [char for char in all_characters if char["Name"] in char_names]
+
+                # Build character display block
+                character_list_html = ""
+
+                for char in characters:
+                    hover_class = "hover-trigger-dead" if char.get("IsDead") else "hover-trigger"
+                    level = char.get("Stats", {}).get("Level", "?")
+                    class_name = char.get("Class", "Unknown")
+                    name = char["Name"]
+
+                    character_list_html += f"""
+                    <div class="character-info">
+                        <div class="character-link">
+                            <a href="https://beta.pathofdiablo.com/armory?name={name}" target="_blank">
+                                {name}
+                            </a>
+                        </div>
+                        <div>Level {level} {class_name}</div>
+                        <div class="{hover_class}" data-character-name="{name}"></div>
+                    </div>
+                    <div class="character">
+                        <div class="popup hidden"></div>
+                    </div>
+                    """
+
+                # Collapsible block per maxed skill
+                safe_skill_name = skill_name.replace(" ", "-")
+                section_html += f"""
+                <span id="{safe_skill_name}"></span>
+                <button class="collapsible">
+                    <img src="icons/open-grey.png" alt="Open" class="icon-small open-icon hidden">
+                    <img src="icons/closed-grey.png" alt="Closed" class="icon-small close-icon">
+                    <strong>{skill_name} ({len(characters)} users)</strong>     
+                    <a href="#{safe_skill_name}" class="anchor-link">
+                        <img src="icons/anchor.png" alt="🔗" class="anchor-icon">
+                    </a>
+                </button>
+                <div class="content">
+                    {character_list_html if characters else "<p>No characters maxed this skill.</p>"}
+                </div>
+                """
+
+            # Wrap in container with section header
+            if section_html:
+                return f"""
+                <h3 id="maxed-skills">Maxed Skills
+                    <a href="#maxed-skills" class="anchor-link">
+                        <img src="icons/anchor.png" alt="🔗" class="anchor-icon">
+                    </a>
+                </h3>
+                <p>These skills have been maxed (20 points) by one or more characters.</p>
+                <button type="button" class="collapsible sets-button">
+                    <img src="icons/Special_click.png" alt="Undead Open" class="icon open-icon hidden">
+                    <img src="icons/Special.png" alt="Undead Close" class="icon close-icon">
+                </button>
+                <div class="content">  
+                    <div id="special">{section_html}</div>
+                </div>
+                """
+            else:
+                return ""
+
+
+        # Updated HTML template
+        html_template = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="Path of Diablo (PoD) {{ what_class }} build trends. This page includes data anaylitics and statistics for {{ what_class }} skills and equipment.">
+        <meta name="keywords" content="{meta_tag}">
+        <meta name="robots" content="index, follow">
+            <title>Hardcore {{ what_class }} Analysis Report</title>
+        <link rel="stylesheet" type="text/css" href="./css/test-css.css">
+
+        </head>
+        <body class="main special-background-{{ what_class|lower }}">
+        <div class="is-clipped">
+        <nav class="navbar is-fixed-top is-dark" style="height: 50px;">
+
+            <div class="navbar-brand">
+                <a class="is-48x48" href="https://beta.pathofdiablo.com/"><img src="icons/pod.ico" alt="Path of Diablo: Web Portal" width="48" height="48" class="is-48x48" style="height: 48px; width: 48px; margin-left:0;"></a>
+    <button class="navbar-burger burger" aria-label="menu" aria-expanded="false" data-target="podNavbar">
+        <br>
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>            </div>
+            <div id="podNavbar" class="navbar-menu">
+                <div class="navbar-start">
+                    <a class="navbar-item" href="https://beta.pathofdiablo.com/trade-search">Trade</a>
+                    <a class="navbar-item" href="https://beta.pathofdiablo.com/servers">Servers</a>
+                    <a class="navbar-item" href="https://beta.pathofdiablo.com/ladder">Ladder</a>
+                    <a class="navbar-item" href="https://beta.pathofdiablo.com/public-games">Public Games</a>
+                    <a class="navbar-item" href="https://beta.pathofdiablo.com/runewizard">Runewizard</a>
+                    <a class="navbar-item" href="https://pathofdiablo.com/p/armory">Armory</a>
+                    <a class="navbar-item" href="https://build.pathofdiablo.com">Build Planner</a>
+                    <!--<a class="navbar-item" href="https://pathofdiablo.com/p/?live" style="width: 90px;"><span><img src="https://beta.pathofdiablo.com/images/twitchico.png"></span></a>-->
+                </div>
+                <div class="navbar-end">
+
+                    <div class="navbar-start">	
+                        <a class="navbar-item-right" href="https://beta.pathofdiablo.com/my-toons">Character Storage</a>
+                        <div class="navbar-item dropdown2">
+                            <button class="dropdown2-button">Trends History</button>
+                            <div class="dropdown2-content">
+                                <a href="https://trends.pathofdiablo.com/Home.html">Current</a>
+                                <!--  <a href="https://trends.pathofdiablo.com/Season/14/April/Home">S14</a> -->
+                                <div class="dropdown2-item dropdown-sub">
+                                    <a class="dropdown-sub-button">S13</a>
+                                    <div class="dropdown-sub-content">
+                                        <a href="https://trends.pathofdiablo.com/Season/13/July/Home">July</a>
+                                        <a href="https://trends.pathofdiablo.com/Season/13/June/Home">June</a>
+                                        <a href="https://trends.pathofdiablo.com/Season/13/May/Home">May</a>
+                                        <a href="https://trends.pathofdiablo.com/Season/13/April/Home">April</a>
+                                        <a href="https://trends.pathofdiablo.com/Season/13/March/Home.html">March</a>
+                                        <a href="https://trends.pathofdiablo.com/Season/13/February/Home.html">February</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        </nav>  
+        <div class="hamburger hamburger2" onclick="toggleMenu()">
+            <div class="line"></div>
+            <div class="line"></div>
+            <div class="line"></div>
+        </div>
+    
+        <div class="top-buttons">
+            <a href="hcHome" class="top-button home-button" onclick="setActive('Home')"></a>
+            <a href="#" id="SC_HC" class="top-button"> </a>
+            <a href="hcAmazon" id="Amazon" class="top-button amazon-button"></a>
+            <a href="hcAssassin" id="Assassin" class="top-button assassin-button"></a>
+            <a href="hcBarbarian" id="Barbarian" class="top-button barbarian-button"></a>
+            <a href="hcDruid" id="Druid" class="top-button druid-button"></a>
+            <a href="hcNecromancer" id="Necromancer" class="top-button necromancer-button"></a>
+            <a href="hcPaladin" id="Paladin" class="top-button paladin-button"></a>
+            <a href="hcSorceress" id="Sorceress" class="top-button sorceress-button"></a>
+            <a href="https://github.com/qordwasalreadytaken/pod-stats/blob/main/README.md" class="top-button about-button" target="_blank"></a>
+        </div>
+         
+            <h1>{{ what_class }} Hardcore Skill Distribution </h1>
+            <div class="summary-container">
+
+<div page-intro-class>
+
+<!--                {{ full_summary_output }} -->
+<!--            </div> -->
+            {intro_summary}
+            <p class="indented-skills"> </p>
+
+<!--        <h2>Detailed Grouping Information, Ordered Highest to Lowest %</h2>-->
+
+        {% for clusters, data in clusters.items() %}
+        <!--<h2>{{ data['label'] }}</h2>
+        <p class="indented-skills"><strong>Other Skills:<br></strong> {{ data['other_skills'] }}</p> -->
+        <div class="class-intro">
+        <div id="skills" class="skills-container">
+            <div class="column">
+                <ul id="most-popular-skills">
+                    <h2>{{ data['label'] }}</h2>
+                </ul>
+            </div>
+<!--            <div class="column">
+                <ul id="other-skills">
+                    <h2>Other common skills in this group:</h2> {{ data['other_skills'] }}
+                </ul>
+            </div> -->
+        </div>
+
+    <button type="button" class="collapsible small-collapsible">
+        <img src="icons/open.png" alt="Open" class="icon-small open-icon hidden">
+        <img src="icons/closed.png" alt="Close" class="icon-small close-icon">
+                <strong>All Skills</strong></button>
+                <div class="content">
+                    <div>{{ data['remaining_skills_with_icons'] }}</div>
+                </div>
+
+                <button type="button" class="collapsible small-collapsible">
+        <img src="icons/open.png" alt="Open" class="icon-small open-icon hidden">
+        <img src="icons/closed.png" alt="Close" class="icon-small close-icon">
+                <strong>Most Common Equipment:</strong></button>
+                <div class="content">
+                    <div>{{ data['top_equipment'] }}</div>
+                </div>
+<!--             
+                <button type="button" class="collapsible small-collapsible">
+        <img src="icons/open.png" alt="Open" class="icon-small open-icon hidden">
+        <img src="icons/closed.png" alt="Close" class="icon-small close-icon">
+                <strong>ALL Equipment:</strong></button>
+                <div class="content">
+                    <div>{{ data['equipment_counts'] }}</div>
+                </div>
+-->
+            <button type="button" class="collapsible small-collapsible">
+        <img src="icons/open.png" alt="Open" class="icon-small open-icon hidden">
+        <img src="icons/closed.png" alt="Close" class="icon-small close-icon">
+            <strong>{{ data['character_count'] }} Characters in this cluster:</strong>
+        </button>
+        <div class="content">
+{% for character in data['characters'] %}
+<!--
+<div class="character-container {% if loop.index is even %}char1{% else %}char2{% endif %}">
+-->
+<div class="character-container char2">
+    <div class="character-info" id={{ character['name'] }}>
+                <div class="character-link">
+                        <strong>Name: <a href="https://beta.pathofdiablo.com/armory?name={{ character['name'] }}" target="_blank">
+                            {{ character['name'] }}
+                        </a>
+                    </strong>
+                </div>
+            <strong>Level: {{ character['level'] }}</strong>
+                        <a href="#{{ character['name'] }}" class="anchor-link">
+                    <img src="icons/anchor.png" alt="🔗" class="anchor-icon">
+                </a>
+<!--        <div>Class: {{ character['class'] }}</div> -->
+
+                {% if character['dead'] %}
+                    <div class="hover-trigger-dead" data-character-name="{{ character['name'] }}">
+                        <!--Dead -->
+                    </div>
+                {% else %}
+                    <div class="hover-trigger" data-character-name="{{ character['name'] }}">
+                        <!--Armory Quickview -->
+                    </div>
+                {% endif %}
+
+            </div>
+            <div class="character">
+                <div class="popup hidden"></div> <!-- No iframe inside initially -->
+            </div>
+
+            <p><strong>Skills:<br></strong> {{ character['skills'] }}</p>
+            <p><strong>Equipment:<br></strong> {{ character['equipment'] }}</p>
+            <p><strong>Mercenary:<br></strong> {{ character['mercenary'] }} - {{ character['mercenary_equipment'] }}</p>
+
+    <div class="character">
+        <div class="popup hidden"></div> <!-- No iframe inside initially -->
+    </div>
+<!--
+    <p><strong>Skills:<br></strong> {{ character['skills'] }}</p>
+    <p><strong>Equipment:<br></strong> {{ character['equipment'] }}</p>
+    <p><strong>Mercenary:<br></strong> {{ character['mercenary'] }} - {{ character['mercenary_equipment'] }}</p>
+-->
+    <div class="character-section" data-character-name="{{ character['name'] }}"></div>
+</div>
+<hr color="#141414">
+<br>
+{% endfor %}
+            <br>
+            </div>
+            </div>
+        <!--    <hr width="90%"> -->
+            <br>
+            {% endfor %}
+            <h3>Top 5 Most Popular {{ what_class }} Skills:</h3>
+            <ul>
+            {% for skill, usage in top_5_most_used_skills.items() %}
+                <li class="usage-label"
+                    data-usage='{{ historical_usage.get(skill, {}) | tojson }}'>
+                    {{ skill }}: {{ usage }}
+                </li>
+            {% endfor %}
+            </ul>
+
+            <h3>Top 5 Least Popular {{ what_class }} Skills:</h3>
+            <ul>
+            {% for skill, usage in bottom_5_least_used_skills.items() %}
+                <li class="usage-label"
+                    data-usage='{{ historical_usage.get(skill, {}) | tojson }}'>
+                    {{ skill }}: {{ usage }}
+                </li>
+            {% endfor %}
+            </ul>
+            <br>
+            <!-- Maxed skill list below -->
+            {all_maxed}
+            <hr>
+            <br>
+<!--                            {{ full_summary_output }} -->
+            <br>
+            </div>
+            </div>
+            <br><br>
+                    <!-- Embed the Plotly pie chart -->
+            <div>
+                <img src="charts/{{ what_class }}-clusters_distribution_pie.png" alt="{{ what_class }} Skills Distribution">
+            </div> 
+
+        <hr>
+            <h1>Equipment and item details for {{ what_class}}</h1>
+            <button type="button" class="collapsible runewords-button">
+                <img src="icons/Runewords_click.png" alt="Runewords Open" class="icon open-icon hidden">
+                <img src="icons/Runewords.png" alt="Runewords Close" class="icon close-icon">
+            <!--    <strong>Runewords</strong> -->
+            </button>
+            <div class="content">
+                <div id="runewords" class="container">
+                    <div class="column">
+                        <h3>Most Used Runewords:</h3>
+                        <ul id="most-popular-runewords">
+                            {most_popular_runewords}
+                        </ul>
+                    </div>
+                    <div class="column">
+                        <h3>Least Used Runewords:</h3>
+                        <ul id="least-popular-runewords">
+                            {least_popular_runewords}
+                        </ul>
+                    </div>
+                </div>
+
+
+                <button type="button" class="collapsible small-collapsible">
+                    <img src="icons/open.png" alt="All Runewords Open" class="icon-small open-icon hidden">
+                    <img src="icons/closed.png" alt="Runewords Close" class="icon-small close-icon">
+                    <strong>ALL Runewords</strong>
+                </button>
+
+                <div class="content">
+                    <div id="allrunewords">
+                        {all_runewords}
+                    </div>
+                </div>
+            </div>
+
+            <br>
+            <button type="button" class="collapsible uniques-button">
+                <img src="icons/Uniques_click.png" alt="Uniques Open" class="icon open-icon hidden">
+                <img src="icons/Uniques.png" alt="Uniques Close" class="icon close-icon">
+            <!--    <strong>Uniques</strong>-->
+            </button>    
+            <div class="content">   
+                <div id="uniques" class="container">
+                    <div class="column">
+                        <h3>Most Used Uniques:</h3>
+                        <ul id="most-popular-uniques">
+                            {most_popular_uniques}
+                        </ul>
+                    </div>
+                    <div class="column">
+                        <h3>Least Used Uniques:</h3>
+                        <ul id="least_popular_uniques">
+                            {least_popular_uniques}
+                        </ul>
+                    </div>
+                </div>
+                <button type="button" class="collapsible small-collapsible">
+                    <img src="icons/open.png" alt="All Uniques Open" class="icon-small open-icon hidden">
+                    <img src="icons/closed.png" alt="Uniques Close" class="icon-small close-icon">
+                    <strong>ALL Uniques</strong>
+                </button>
+
+                <div class="content">
+                    <div id="alluniques">
+                        {all_uniques}
+                    </div>
+                </div>
+
+            </div>
+
+            <br>
+            <button type="button" class="collapsible sets-button">
+                <img src="icons/Sets_click.png" alt="Sets Open" class="icon open-icon hidden">
+                <img src="icons/Sets.png" alt="Sets Close" class="icon close-icon">
+            <!--    <strong>Sets</strong>-->
+            </button>  
+            <div class="content">  
+                <div id="sets" class="container">
+                    <div class="column">
+                        <h3>Most Used Set Items:</h3>
+                        <ul id="most-popular-set-items">
+                            {most_popular_set_items}
+                        </ul>
+                    </div>
+                    <div class="column">
+                        <h3>Least Used Set Items:</h3>
+                        <ul id="least_popular_set_items">
+                            {least_popular_set_items}
+                        </ul>
+                    </div>
+                </div>
+                <button type="button" class="collapsible small-collapsible">
+                    <img src="icons/open.png" alt="All Set Open" class="icon-small open-icon hidden">
+                    <img src="icons/closed.png" alt="Set Close" class="icon-small close-icon">
+                    <strong>ALL Set</strong>
+                </button>
+
+                <div class="content">
+                    <div id="allset">
+                        {all_set}
+                    </div>
+                </div>
+            </div>
+            <br>
+                    <h2>Synth reporting</h2>
+<h2 id="synth-items">
+    {synth_user_count} Characters with Synthesized items equipped
+    <a href="#synth-items" class="anchor-link">
+        <img src="icons/anchor.png" alt="🔗" class="anchor-icon">
+    </a>
+</h2>
+                    <h3>This is base synthesized items</h3>
+            <button type="button" class="collapsible sets-button">
+                <img src="icons/Special_click.png" alt="Synth Open" class="icon open-icon hidden">
+                <img src="icons/Special.png" alt="Synth Close" class="icon close-icon">
+            <!--    <strong>Sets</strong>-->
+            </button>  
+            <div class="content">  
+                    <div id="special">
+                        {all_synth}
+                    </div>
+                </div>
+
+<h2 id="synth-from">
+    {synth_source_user_count} Synthesized FROM listings
+    <a href="#synth-from" class="anchor-link">
+        <img src="icons/anchor.png" alt="🔗" class="anchor-icon">
+    </a>
+</h2>
+                    <h3>This shows where propertied an item are showing up in other items. If you wanted to see where the slow from Kelpie or the Ball light from Ondal's had popped up, this is where to look </h3>
+            <button type="button" class="collapsible sets-button">
+                <img src="icons/Special_click.png" alt="Synth Open" class="icon open-icon hidden">
+                <img src="icons/Special.png" alt="Synth Close" class="icon close-icon">
+            <!--    <strong>Sets</strong>-->
+            </button>  
+            <div class="content">  
+                    <div id="special">
+                        {synth_source_data}
+                    </div>
+                </div>
+
+
+                    <br>
+
+<h2 id="craft-reporting">Craft reporting
+    <a href="#craft-reporting" class="anchor-link">
+        <img src="icons/anchor.png" alt="🔗" class="anchor-icon">
+    </a>
+</h2>        
+                    <h2>Craft reporting</h2>
+                    <h3>{craft_user_count} Characters with crafted items equipped</h3>
+
+            <button type="button" class="collapsible sets-button">
+                <img src="icons/Special_click.png" alt="Synth Open" class="icon open-icon hidden">
+                <img src="icons/Special.png" alt="Synth Close" class="icon close-icon">
+            <!--    <strong>Sets</strong>-->
+            </button>  
+            <div class="content">  
+                    <div id="special">
+                        {all_crafted}
+                    </div>
+                </div>
+
+            <br>
+
+            <br>
+<h2 id="magic-reporting">Magic reporting
+    <a href="#magic-reporting" class="anchor-link">
+        <img src="icons/anchor.png" alt="🔗" class="anchor-icon">
+    </a>
+</h2>
+                    <h3>{magic_user_count} Characters with Magic items equipped</h3>
+
+            <button type="button" class="collapsible sets-button">
+                <img src="icons/Special_click.png" alt="Synth Open" class="icon open-icon hidden">
+                <img src="icons/Special.png" alt="Synth Close" class="icon close-icon">
+            <!--    <strong>Sets</strong>-->
+            </button>  
+            <div class="content">  
+                    <div id="special">
+                        {all_magic}
+                    </div>
+                </div>
+
+            <br>
+
+<h2 id="rare-reporting">Rare reporting
+    <a href="#rare-reporting" class="anchor-link">
+        <img src="icons/anchor.png" alt="🔗" class="anchor-icon">
+    </a>
+</h2>
+                    <h3>{rare_user_count} Characters with rare items equipped</h3>
+
+            <button type="button" class="collapsible sets-button">
+                <img src="icons/Special_click.png" alt="Synth Open" class="icon open-icon hidden">
+                <img src="icons/Special.png" alt="Synth Close" class="icon close-icon">
+            <!--    <strong>Sets</strong>-->
+            </button>  
+            <div class="content">  
+                    <div id="special">
+                        {all_rare}
+                    </div>
+                </div>
+
+            <br>
+
+<h2 id="socketable-reporting">Socketable reporting
+    <a href="#socketable-reporting" class="anchor-link">
+        <img src="icons/anchor.png" alt="🔗" class="anchor-icon">
+    </a>
+</h2>
+                    <h3>What are people puting in sockets</h3>
+
+            <button type="button" class="collapsible sets-button">
+                <img src="icons/Special_click.png" alt="Synth Open" class="icon open-icon hidden">
+                <img src="icons/Special.png" alt="Synth Close" class="icon close-icon">
+            <!--    <strong>Sets</strong>-->
+            </button>  
+            <div class="content">  
+                    <h2>Socketed Runes Count</h2>
+                    <h3>Includes Only Character Data, No Mercs</h3>
+                <div id="special"  class="container">
+            <br>
+                    <div class="column">
+                        <!-- Left Column -->
+                            <h2>Most Common Runes <br>(Including Runewords)</h2>
+                        <ul id="sorted_just_socketed_runes"
+                            {sorted_just_socketed_runes}
+                        </ul>
+                        </div>
+
+                        <!-- Right Column -->
+                        <div class="column">
+                            <h2>Most Common Runes <br>(Excluding Runewords)</h2>
+                        <ul id="sorted_just_socketed_excluding_runewords_runes">
+                            {sorted_just_socketed_excluding_runewords_runes}
+                        </ul>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h2>Other Items Found in Sockets</h2>
+                    <h3>Includes Only Character Data, No Mercs</h3>
+                        {all_other_items}
+                    </div>
+                </div>
+<hr>
+                                    <h1>Mercenary reporting</h1>
+<h3 id="merc-equipment">
+    Mercenary counts and Most Used Runewords, Uniques, and Set items equipped
+    <a href="#merc-equipment" class="anchor-link">
+        <img src="icons/anchor.png" alt="🔗" class="anchor-icon">
+    </a>
+</h3>
+
+                    <button type="button" class="collapsible">
+                        <img src="icons/Merc_click.png" alt="Merc Details Open" class="icon open-icon hidden">
+                        <img src="icons/Merc.png" alt="Merc Details Close" class="icon close-icon">
+            <!--            <strong>Mercenary Details</strong> -->
+                    </button>
+                    <div class="content">
+                    <div id="mercequips">
+                        {html_output}
+                    </div>
+                    </div>
+            
+            <hr>
+            {{ fun_facts_html }}
+            <hr>
+
+            <!-- Embed the Plotly scatter plot -->
+            <div>
+                <img src="charts/{{ what_class }}-clusters_with_avg_points.png" alt="{{ what_class }} Skill Clusters Scatter Plot">
+            </div>
+            <button onclick="topFunction()" id="backToTopBtn" class="back-to-top"></button>
+
+            <div class="footer">
+            <p>PoD class data current as of {{ timeStamp }}</p>
+            </div>            
+
+
+<script>
+// Collapsible elemets
+var coll = document.getElementsByClassName("collapsible");
+for (var i = 0; i < coll.length; i++) {
+    coll[i].addEventListener("click", function() {
+        this.classList.toggle("active");
+        var content = this.nextElementSibling;
+        var openIcon = this.querySelector("img.icon[alt='Open']");
+        var closeIcon = this.querySelector("img.icon[alt='Close']");
+
+        if (content.style.display === "block") {
+            content.style.display = "none";
+            openIcon.classList.remove("hidden");
+            closeIcon.classList.add("hidden");
+        } else {
+            content.style.display = "block";
+            openIcon.classList.add("hidden");
+            closeIcon.classList.remove("hidden");
+        }
+    });
+}
+
+
+//Back to top button
+var backToTopBtn = document.getElementById("backToTopBtn");
+
+// When the user scrolls down 20px from the top of the document, show the button
+window.onscroll = function() {scrollFunction()};
+
+function scrollFunction() {
+if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+backToTopBtn.style.display = "block";
+} else {
+backToTopBtn.style.display = "none";
+}
+}
+
+// When the user clicks on the button, scroll to the top of the document
+function topFunction() {
+document.body.scrollTop = 0; // For Safari
+document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+}
+
+//Trends toolbar
+// Trends toolbar
+function toggleMenu() {
+    const navMenu = document.querySelector('.top-buttons');
+    navMenu.classList.toggle('show');
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    const scHcButton = document.getElementById("SC_HC");
+    const currentUrl = window.location.href;
+    const filename = currentUrl.split("/").pop(); // Get the last part of the URL
+
+    // Check if the current page is Hardcore or Softcore
+    const isHardcore = filename.startsWith("hc");
+
+    // Update button appearance based on current mode
+    if (isHardcore) {
+        scHcButton.classList.add("hardcore");
+        scHcButton.classList.remove("softcore");
+    } else {
+        scHcButton.classList.add("softcore");
+        scHcButton.classList.remove("hardcore");
+    }
+
+    // Update background image based on mode
+    updateButtonImage(isHardcore);
+
+    // Add click event to toggle between SC and HC pages
+    scHcButton.addEventListener("click", function () {
+        let newUrl;
+
+        if (isHardcore) {
+            // Convert HC -> SC (remove "hc" from filename)
+            newUrl = currentUrl.replace(/hc(\w+)$/, "$1"); // Remove "hc"
+        } else {
+            // Convert SC -> HC (prepend "hc" to the filename)
+            newUrl = currentUrl.replace(/\/(\w+)$/, "/hc$1"); // Prepend "hc"
+        }
+
+        // Redirect to the new page
+        if (newUrl !== currentUrl) {
+            window.location.href = newUrl;
+        }
+    });
+
+    // Function to update button background image
+    function updateButtonImage(isHardcore) {
+        if (isHardcore) {
+            scHcButton.style.backgroundImage = "url('icons/Hardcore_click.png')";
+        } else {
+            scHcButton.style.backgroundImage = "url('icons/Softcore_click.png')";
+        }
+    }
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    const currentPage = window.location.pathname.split("/").pop(); // Get current page filename
+    const menuItems = document.querySelectorAll(".top-button");
+
+    menuItems.forEach(item => {
+        const itemPage = item.getAttribute("href");
+        if (itemPage && currentPage === itemPage) {
+            item.classList.add("active");
+        }
+    });
+});
+
+
+document.addEventListener("DOMContentLoaded", function () {
+const currentPage = window.location.pathname.split("/").pop(); // Get current page filename
+const menuItems = document.querySelectorAll(".top-button");
+
+menuItems.forEach(item => {
+const itemPage = item.getAttribute("href");
+if (itemPage && currentPage === itemPage) {
+item.classList.add("active");
+}
+});
+});
+
+//Armory pop up
+document.addEventListener("DOMContentLoaded", function () {
+let activePopup = null;
+
+document.querySelectorAll(".hover-trigger").forEach(trigger => {
+trigger.addEventListener("click", function (event) {
+event.stopPropagation();
+const characterName = this.getAttribute("data-character-name");
+
+// Close any open popup first
+if (activePopup) {
+activePopup.classList.remove("active");
+activePopup.innerHTML = ""; // Remove iframe for memory efficiency
+activePopup = null;
+}
+
+// Find the associated popup container
+const popup = this.closest(".character-info").nextElementSibling.querySelector(".popup");
+
+// If this popup was already active, just close it
+if (popup === activePopup) {
+return;
+}
+
+// Create an iframe and set its src
+const iframe = document.createElement("iframe");
+iframe.src = `./armory/video_component.html?charName=${encodeURIComponent(characterName)}`;
+iframe.setAttribute("id", "popupFrame");
+
+// Add iframe to the popup
+popup.appendChild(iframe);
+popup.classList.add("active");
+
+// Set this popup as the active one
+activePopup = popup;
+});
+});
+
+// Close the popup when clicking anywhere outside
+document.addEventListener("click", function (event) {
+if (activePopup && !activePopup.contains(event.target)) {
+activePopup.classList.remove("active");
+activePopup.innerHTML = ""; // Remove iframe to free memory
+activePopup = null;
+}
+});
+});
+
+
+//PoD nav buttons
+document.addEventListener('DOMContentLoaded', () => {
+    const burger = document.querySelector('.navbar-burger');
+    const menu = document.querySelector('.navbar-menu');
+
+    burger.addEventListener('click', () => {
+        menu.classList.toggle('is-active');
+        burger.classList.toggle('is-active');
+    });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const dropdownButton = document.querySelector('.dropdown2-button');
+    const dropdownContent = document.querySelector('.dropdown2-content');
+
+    dropdownButton.addEventListener('click', (event) => {
+        event.stopPropagation(); // Prevents clicks from propagating to other elements
+        dropdownContent.classList.toggle('is-active'); // Toggles the dropdown visibility
+    });
+
+    // Close the dropdown if you click anywhere outside it
+    document.addEventListener('click', () => {
+        if (dropdownContent.classList.contains('is-active')) {
+            dropdownContent.classList.remove('is-active');
+        }
+    });
+});
+
+
+//Anchor in place fix
+// Expand collapsibles and scroll to anchor
+function scrollWithOffset(el, offset = -50) {
+    const y = el.getBoundingClientRect().top + window.pageYOffset + offset;
+    window.scrollTo({ top: y, behavior: 'smooth' });
+}
+
+function expandToAnchor(anchorId) {
+    console.log("expandToAnchor called with:", anchorId);
+    const target = document.getElementById(anchorId);
+    if (!target) return;
+
+    // Step 1: Collect all parent .content elements that need expanding
+    const stack = [];
+    let el = target;
+    while (el) {
+        if (el.classList?.contains('content')) {
+            stack.unshift(el); // add to beginning to expand outermost first
+        }
+        el = el.parentElement;
+    }
+
+    // Step 2: Expand each .content section in order
+    for (const content of stack) {
+        const button = content.previousElementSibling;
+        if (button?.classList.contains('collapsible')) {
+            button.classList.add('active');
+            content.style.display = "block";
+
+            const openIcon = button.querySelector("img.open-icon");
+            const closeIcon = button.querySelector("img.close-icon");
+            if (openIcon) openIcon.classList.add("hidden");
+            if (closeIcon) closeIcon.classList.remove("hidden");
+        }
+    }
+
+    // Step 3: Delay scroll until DOM has reflowed
+    setTimeout(() => {
+        console.log("scrolling to:", target.id);
+        scrollWithOffset(target);
+    }, 250); // Adjust if necessary
+}
+
+// Handle clicks on .anchor-link elements
+document.addEventListener('DOMContentLoaded', () => {
+    // Handle clicks on .anchor-link elements
+    document.querySelectorAll('.anchor-link, a[href^="#"]').forEach(link => {
+        link.addEventListener('click', function (event) {
+            event.preventDefault(); // Prevent default anchor behavior
+            const anchorId = this.getAttribute('href').substring(1);
+            const fullUrl = `${window.location.origin}${window.location.pathname}#${anchorId}`;
+
+            navigator.clipboard.writeText(fullUrl); // Copy full link to clipboard
+            history.pushState(null, '', `#${anchorId}`); // Update URL without page reload
+            expandToAnchor(anchorId); // Expand and scroll
+        });
+    });
+
+    // On initial load with hash
+    if (window.location.hash) {
+        const anchorId = window.location.hash.substring(1);
+        // Wait a bit for collapsibles/content to render
+        setTimeout(() => {
+            expandToAnchor(anchorId);
+        }, 200);
+    }
+});
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<canvas id="tooltipChart" width="350" height="160" 
+        style="position:absolute;display:none;z-index:9999;
+               background-color:white;color:black;">
+</canvas>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const canvas = document.getElementById('tooltipChart');
+  const ctx = canvas.getContext('2d');
+  let chart;
+
+  document.querySelectorAll('.usage-label').forEach(label => {
+    label.addEventListener('mouseenter', e => {
+      const data = JSON.parse(label.dataset.usage || '{}');
+      const preferredOrder = ["March", "April", "May", "June", "July", "August"];
+      const labels = preferredOrder.filter(month => data.hasOwnProperty(month));
+      const values = labels.map(label => parseInt(data[label]));
+
+      if (chart) chart.destroy();
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+            datasets: [{
+            label: '                                                                                                                   ',  // suppress legend label
+            data: values,
+            borderColor: '#f97316',         // line color (orange)
+            backgroundColor: 'transparent', // make sure no fill color
+            fill: false,
+            pointRadius: 3,
+            tension: 0.3
+            }]
+        },
+        options: {
+            layout: {
+                padding: {
+                    right: 12,  // prevent cut-off on the right
+                    top: 6
+                }
+                },
+            responsive: false,
+            plugins: {
+                legend: {
+                    display: false  // ← This removes the colored box and any label space
+                },
+                title: {
+                    display: true,
+                    text: label.textContent + ' Usage Over Time',
+                    color: '#000',
+                    font: { size: 14, weight: 'bold' }
+                }
+                
+            },
+            scales: {
+                x: {
+                ticks: { color: '#000' },
+                grid: { color: '#ccc' }
+                },
+                y: {
+                ticks: { color: '#000' },
+                grid: { color: '#ccc' },
+                beginAtZero: true
+                }
+            }
+        }
+      });
+
+      canvas.style.left = (e.pageX + 10) + 'px';
+      canvas.style.top = (e.pageY - 80) + 'px';
+      canvas.style.display = 'block';
+    });
+
+    label.addEventListener('mouseleave', () => {
+      canvas.style.display = 'none';
+    });
+  });
+});
+</script>
+
+
+
+        </body>
+        </html>
+        """
+
+        def analyze_mercenaries(filtered_characters):
+            mercenary_counts = Counter()
+            mercenary_equipment = defaultdict(lambda: defaultdict(Counter))
+            mercenary_names = Counter()
+
+            for char_data in filtered_characters:
+                if not isinstance(char_data, dict):
+                    print(f"Skipping unexpected data format: {char_data}")
+                    continue  # Skip invalid entries
+
+                mercenary = char_data.get("MercenaryType")
+                if mercenary:
+                    readable_mercenary, _ = map_readable_names(mercenary, "")
+                    mercenary_counts[readable_mercenary] += 1
+
+                    merc_name = char_data.get("MercenaryName", "Unknown")
+                    mercenary_names[merc_name] += 1
+
+                    for item in char_data.get("MercenaryEquipped", []):
+                        worn_category = item.get("Worn", "Unknown")
+                        readable_mercenary, readable_worn = map_readable_names(mercenary, worn_category)
+                        title = item.get("Title", "Unknown")
+                        mercenary_equipment[readable_mercenary][readable_worn][title] += 1
+
+            return mercenary, mercenary_counts, mercenary_equipment, mercenary_names
+
+    #        output_file = "all_mercenary_report.html"
+
+        # Function to generate the HTML report
+        def generate_mercenary_report(filtered_characters):
+            _, mercenary_counts, mercenary_equipment, mercenary_names = analyze_mercenaries(filtered_characters)  # Ignore first return value
+
+            html_output = "<p><h2>Mercenary Analysis and Popular Equipment</h2></p>"
+
+            # Mercenary type counts
+            html_output += "<p><h3>Mercenary Type Counts</h3></p><ul>"
+            for mercenary, count in mercenary_counts.items():
+                html_output += f"<li>{mercenary}: {count}</li>"
+            html_output += "</ul>"
+
+            # ✅ This now works!
+            html_output += "<h3>Most Common Mercenary Names</h3><ul>"
+            for name, count in mercenary_names.most_common(10):
+                html_output += f"<li>{name}: {count}</li>"
+            html_output += "</ul>"
+
+            # Popular Equipment by Mercenary Type
+            html_output += "<p><h3>Popular Equipment by Mercenary Type</h3></p>"
+            for mercenary, categories in mercenary_equipment.items():
+                html_output += f"<div class='row'><p><strong>{mercenary}</strong></p>"
+                for worn_category, items in categories.items():
+                    html_output += f"<div class='merccolumn'><strong>Most Common {worn_category}s:</strong>"
+                    html_output += "<ul>"
+                    top_items = items.most_common(15)  # Get the top 10 items
+                    for title, count in top_items:
+                        html_output += f"<li>{title}: {count}</li>"
+                    html_output += "</ul></div>"
+                html_output += "</div>"
+
+            return html_output
+
+        # Load the consolidated JSON file
+        # ✅ Load the single JSON file
+        with open("hc_ladder.json", "r") as file:
+            all_characters = json.load(file)
+        all_characters = [char for char in all_characters if isinstance(char, dict) and char.get("Stats", {}).get("Level", 0) >= 60]
+
+        # Generate the report
+        html_output = generate_mercenary_report(filtered_characters)
+
+        def load_usage_history(csv_path):
+            import csv
+            usage_history = {}
+            with open(csv_path, newline='', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    if row["Type"] == "Skill" and row["Class"]:
+                        name = row["Name"]
+                        snapshots = {k: row[k] for k in row if k not in {"Type", "Class", "Name"}}
+                        usage_history[name] = snapshots
+            return usage_history
+
+        historical_usage = load_usage_history("hc-usage-over-time.csv")
+
+        def generate_hist_items(skills_dict, usage_history):
+            html = ""
+            for skill, count in skills_dict.items():
+                snapshots = usage_history.get(skill, {})
+                data_usage = f"data-usage='{json.dumps(snapshots)}'" if snapshots else ""
+                html += f"<li class='usage-label' {data_usage}>{skill}: {count}</li>\n"
+            return html
+
+
+        # Assuming df is your DataFrame and skill_columns contains the column names for the skills
+
+        # Calculate the total usage of each skill across all clusters
+        total_skill_usage = df[skill_columns].sum()
+
+        # Sort skills by total usage in descending order
+        most_used_skills = total_skill_usage.sort_values(ascending=False)
+
+        # Sort skills by total usage in ascending order
+        least_used_skills = total_skill_usage.sort_values(ascending=True)
+
+        # Extract the top 5 most used skills
+        top_5_most_used_skills = most_used_skills.head(5)
+
+        # Extract the bottom 5 least used skills
+        bottom_5_least_used_skills = least_used_skills.head(5)
+
+        # Load your usage-over-time data from the CSV
+        usage_history = load_usage_history("hc-usage-over-time.csv")
+        # Use the same function to generate both sets of HTML list items
+        top_skills_html = generate_hist_items(top_5_most_used_skills, usage_history)
+        bottom_skills_html = generate_hist_items(bottom_5_least_used_skills, usage_history)
+
+        # Calculate the percentage of characters that have invested in each skill within the cluster
+        skill_percentages = df[skill_columns].astype(bool).groupby(df['Cluster']).mean() * 100
+
+        # Identify the top skills per cluster with their average points and percentages
+        top_skills_with_avg_and_percent = skill_averages.apply(lambda x: [(skill, round(x[skill], 2), round(skill_percentages.loc[x.name, skill], 2)) for skill in x.nlargest(howmany_skills).index], axis=1)
+
+
+        # Define skill weights
+        skill_weights = {
+            ### Amazon
+            ### Assassin
+            "Dragon Talon": 100,
+            "Dragon Flight": 30,
+            "Mind Blast": 100, 
+            "Psychic Hammer": 100,
+            ### Barb
+            "Bash": 50,
+            "Cleave": 50,
+            "Whirlwind": 100,
+            "Double Swing": 50,
+            "War Cry": 70,
+            ### Druid
+            "Rabies": 50,
+            "Fury": 70,
+            "Fire Claws": 70,
+            ### Necro
+            "Hemorrhage": 70,
+            "Deadly Poison": 70,
+            "Corpse Explosion": 50,
+            ### Paladin
+            "Fist of the Heavens":80,
+            "Zeal": 70,
+            "Dashing Strike": 70,
+            "Smite": 70,
+            "Charge": 70,
+            "Holy Bolt": 70,
+            ### Sorceress
+            "Telekinesis": 50,
+            "Thunder Storm": 80,
+            "Lightning Surge": 100,
+            "Nova": 50,
+            "Charged Bolt": 100,
+            "Blizzard": 100,
+            "Frigerate": 100,
+            "Freezing Pulse": 100,
+            "Frozen Orb": 100,
+            "Frost Nova": 50,
+            "Hydra": 100,
+            "Meteor": 100,
+            "Enflame": 100,
+            "Immolate": 50,
+            "Inferno": 80
+        }
+
+        # Define your existing top_skills_with_avg_and_percent
+        top_skills_with_avg_and_percent = skill_averages.apply(
+            lambda x: [(skill, round(x[skill], 2), round(skill_percentages.loc[x.name, skill], 2)) 
+                    for skill in x.nlargest(howmany_skills).index], axis=1)
+
+        # Sort skills by weights immediately after defining top_skills_with_avg_and_percent
+        top_skills_with_avg_and_percent = top_skills_with_avg_and_percent.apply(
+            lambda skill_list: sorted(skill_list, key=lambda skill: -skill_weights.get(skill[0], 0))
+        )
+
+        summary_label = ""
+        summaries = []
+        
+        def generate_summary(clusters, class_name):
+            skill_weights = {
+                "Telekinesis": 5,
+                "Thunder Storm": 8,
+                "Lightning Surge": 10,
+                "Nova": 5,
+                "Charged Bolt": 10,
+                "Blizzard": 10,
+                "Frigerate": 10,
+                "Freezing Pulse": 10,
+                "Frozen Orb": 10,
+                "Frost Nova": 5,
+                "Hydra": 10,
+                "Meteor": 10,
+                "Enflame": 10
+            }
+
+            summaries = []
+
+            for cluster, data in clusters.items():
+                cluster_percentage = data["character_count"] / sum(c["character_count"] for c in clusters.values()) * 100
+                top_skills = data["label"].split("<br>")  # Extract skills
+
+                # Assign weights & sort by importance
+                weighted_skills = sorted(
+                    top_skills, 
+                    key=lambda skill: skill_weights.get(skill.split()[0], 1), 
+                    reverse=True
+                )
+
+                # Format the summary
+                summary = f"{cluster_percentage:.2f}% of {class_name}s favor " + ", ".join(weighted_skills)
+                summaries.append((cluster_percentage, summary))
+
+            return summaries
+
+#        data_folder = "sc/ladder-all"
+
+        # Gather data for the report
+        clusters = {}
+        for cluster, group in df.groupby('Cluster'):
+            sorted_group = group.sort_values(by='Level', ascending=False)  # Sort by level descending
+            character_count = len(sorted_group)
+            cluster_percentage = cluster_counts[cluster]
+            equipment_counts = {}
+
+            # Later processing (example, adjust as needed)
+            for row in sorted_group.itertuples():
+                equipment_list = row.Equipment.split(", ")
+                for item in equipment_list:
+                    if item:
+                        worn, title_count = item.split(": ", 1)
+                        if " x" in title_count:
+                            title, count = title_count.split(" x", 1)
+                            count = int(count)
+                        else:
+                            title = title_count
+                            count = 1
+
+                        if worn not in equipment_counts:
+                            equipment_counts[worn] = {}
+                        if title in equipment_counts[worn]:
+                            equipment_counts[worn][title] += count
+                        else:
+                            equipment_counts[worn][title] = count  # Initialize with real count
+
+
+#            print("🔹 Original Equipment Counts:")
+#            pp.pprint(equipment_counts)
+
+            # Extract character file paths for this cluster
+            cluster_files = [f"{row.Class.lower()}/{row.Name}.json" for row in sorted_group.itertuples()]
+            cluster_files = [path for path in cluster_files if os.path.exists(path)]  # Filter only existing files
+
+            # Get mercenary data **just for this cluster**
+            _, mercenary_counts, mercenary_equipment, mercenary_names = analyze_mercenaries(filtered_characters)
+
+            # Generate HTML report for mercenaries in this cluster
+            merc_count = f"<h3>Mercenary Equipment Analysis for Cluster {cluster}</h3>"
+
+            # Mercenary type counts
+            merc_count += "<h4>Count of Mercenary Types</h4>"
+            for mercenary, count in mercenary_counts.items():
+                merc_count += f"<p>{mercenary}: {count}</p>"
+
+            # Mercenary equipment titles
+            merc_count += "<h4>Equipment Titles</h4>"
+            for mercenary, equipment in mercenary_equipment.items():
+                merc_count += f"<p><strong>{mercenary}:</strong></p>"
+                for title, count in equipment.items():
+                    merc_count += f"<p>{title}: {count}</p>"
+
+            # ✅ Fix: Ensure the cluster exists before adding merc_count
+            if cluster not in clusters:
+                clusters[cluster] = {}
+
+            if 'merc_count' not in clusters[cluster]:
+                clusters[cluster]['merc_count'] = merc_count
+
+            # Calculate total counts for each category
+            total_counts = {
+                worn: sum(titles.values())
+                for worn, titles in equipment_counts.items()
+            }
+
+            # Calculate the percentages based on total counts
+            equipment_percentages = {
+                worn: {title: (count / total_counts[worn]) * 100 for title, count in titles.items()}
+                for worn, titles in equipment_counts.items()
+            }
+
+            # Get top equipment based on count
+            top_equipment = {
+                worn: sorted(titles.items(), key=lambda item: item[1], reverse=True)[:5]
+                for worn, titles in equipment_counts.items()
+            }
+
+            # Use equipment_percentages for display
+            top_equipment_str_list = []
+            for worn, titles in top_equipment.items():
+                titles_str = "<br>".join([f"&nbsp;&nbsp;&nbsp;&nbsp;{title} {equipment_percentages[worn][title]:.2f}% ({count})" for title, count in titles])
+                top_equipment_str_list.append(f"<strong>{worn.capitalize()}</strong>: <br>{titles_str}")
+
+            top_equipment_str = "<br>".join(top_equipment_str_list)
+
+            # Use sorted_equipment_counts for full display
+            sorted_equipment_counts = {
+                worn: dict(sorted(titles.items(), key=lambda item: item[1], reverse=True))
+                for worn, titles in equipment_counts.items()
+            }
+
+            equipment_counts_str_list = []
+            for worn, titles in sorted_equipment_counts.items():
+                titles_str = ", ".join([f"{title} {equipment_percentages[worn][title]:.2f}%" for title in titles])
+                equipment_counts_str_list.append(f"<strong>{worn.capitalize()}</strong>: {titles_str}")
+
+            equipment_counts_str = "<br>".join(equipment_counts_str_list)
+
+            # Output results
+#            print(top_equipment_str)
+#            print(equipment_counts_str)
+
+
+            # Define a helper function to format numbers
+            def format_number(num):
+                return int(num) if num % 1 == 0 else round(num, 2)
+
+            # Filter top skills
+            top_skills = [skill for skill, _, _ in top_skills_with_avg_and_percent[cluster]]
+
+            # Filter other skills, ignoring those with zero points
+            other_skills = skill_averages.loc[cluster].drop(top_skills)
+            other_skills = other_skills[other_skills > 0].nlargest(6)
+            other_skills_pie = "<br>".join([f"{skill} ({format_number(avg)})" for skill, avg in other_skills.items()])
+#            other_skills_str = "<br>".join([f"<img src='{icons_folder}/{skill}.png' alt='{skill}' width='20' height='20'> {skill} {round(skill_percentages.loc[cluster, skill], 2)}% ({format_number(other_skills[skill] * character_count)})" for skill in other_skills.index])
+            other_skills_str = "<br>".join([
+                f"<img src='{icons_folder}/{skill}.png' alt='{skill}' class='skill-icon'> "
+                f"<span class='{'highlight-100' if round(skill_percentages.loc[cluster, skill], 2) == 100 else 'normal-skill'}'>"
+                f"{skill} {round(skill_percentages.loc[cluster, skill], 2)}% "
+                f"({format_number(other_skills[skill] * character_count)})</span>"
+                for skill in other_skills.index
+            ])
+            # Filter remaining skills, ignoring those with zero points
+            remaining_skills = skill_averages.loc[cluster].sort_values(ascending=False)
+            remaining_skills = remaining_skills[remaining_skills > 0]
+#            remaining_skills_str2 = "<br>".join([f"{skill} {round(skill_percentages.loc[cluster, skill], 2)}% ({format_number(remaining_skills[skill] * character_count)})" for skill in remaining_skills.index])
+            remaining_skills_str2 = "<br>".join([
+                f"<img src='{icons_folder}/{skill}.png' alt='{skill}' class='skill-icon'> "
+                f"<span class='{'highlight-100' if round(skill_percentages.loc[cluster, skill], 2) == 100 else 'normal-skill'}'>"
+                f"{skill} {round(skill_percentages.loc[cluster, skill], 2)}% "
+                f"({format_number(remaining_skills[skill] * character_count)})</span>"
+                for skill in remaining_skills.index
+            ])
+
+
+#            remaining_skills_str_with_icons = "<br>".join([f"<img src='{icons_folder}/{skill}.png' alt='{skill}' width='20' height='20'> {skill} {round(skill_percentages.loc[cluster, skill], 2)}% ({format_number(remaining_skills[skill] * character_count)})" for skill in remaining_skills.index])
+            # Group the skills into chunks of 5
+            # Group skills into chunks of 10, with each row containing 2 skills
+            remaining_skills_str_with_icons = "\n".join([
+                "<div class='skills-group'>" + "\n".join([
+                    "<div class='skills-row'>" +
+                    "\n".join([
+                        f"<div class='skill-item'>"
+                        f"<div class='skillbar-container'>"
+                        f"<div class='skill-info'>"
+                        f"<img src='{icons_folder}/{skill}.png' alt='{skill}' class='skill-icon'> "
+                        f"{skill} {round(skill_percentages.loc[cluster, skill], 2)}% ({format_number(remaining_skills[skill] * character_count)})"
+                        f"</div>"
+                        f"<div class='skill-mini-bar' style='width: {round(skill_percentages.loc[cluster, skill], 2) * 4}px;'></div>"
+                        f"</div>"
+                        f"</div>"
+                        for skill in remaining_skills.index[row:row+2]
+                    ]) +
+                    "</div>"  # Close row
+                    for row in range(i, min(i+10, len(remaining_skills.index)), 2)
+                ]) + "</div>"  # Close group
+                for i in range(0, len(remaining_skills.index), 10)
+            ])
+
+        #    all_skills_str2 = "<br>".join([f"{skill} {round(skill_percentages.loc[cluster, skill], 2)}% ({round(remaining_skills[skill] * character_count, 2)})" for skill in all_skills.index])
+        #    all_skills_str2_with_icons = "<br>".join([f"<img src='{icons_folder}/{skill}.png' alt='{skill}' width='20' height='20'> {skill} {round(skill_percentages.loc[cluster, skill], 2)}% ({round(remaining_skills[skill] * character_count, 2)})" for skill in all_skills.index])
+            sorted_summary_label = ""
+            summary_labels = [skill for skill, _, _ in top_skills_with_avg_and_percent[cluster]]
+            summary = f"&nbsp;&nbsp;- {cluster_percentage:.2f}% use " + ", ".join(summary_labels)
+#            summary = f"{cluster_percentage:.2f}% of {what_class}'s invest heavily in " + ", ".join(summary_labels)
+            summaries.append((cluster_percentage, summary))
+
+            clusters[cluster] = {
+                'label': f'<div id="cluster-{cluster}">' +
+                        f"{cluster_percentage:.2f}% of {what_class}'s Main Skills:" +
+                        f'<a href="#cluster-{cluster}" class="anchor-link">' +
+                        f'<img src="icons/anchor.png" alt="🔗" class="anchor-icon"></a>' +
+                        '<br>' +
+                        "".join([
+                    f"""
+                    <div class="skillbar-container">
+                        <div class="skill-row">
+                            <img src="{icons_folder}/{skill}.png" alt="{skill}" class="skill-icon">
+                            <div class="skill-bar-container">
+                                <div class="skill-bar" >
+                                    <span class="skill-label">{skill} ({int(avg * character_count)})</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    """
+                    for skill, avg, percent in top_skills_with_avg_and_percent[cluster]
+                ]),
+
+                'character_count': character_count,
+                'other_skills': other_skills_str,
+                'other_skills_pie': other_skills_pie,
+                'characters': [
+                    {
+                        'name': row.Name, 'level': row.Level, 'dead': row.Dead, 'skills': row.Skills,
+                        'equipment': row.Equipment, 'mercenary': row.Mercenary,
+                        'mercenary_equipment': row.MercenaryEquipment, 'class': row.Class
+                    } 
+                    for row in sorted_group.itertuples()
+                ],
+                'top_equipment': top_equipment_str,  
+                'equipment_counts': equipment_counts_str,
+                'remaining_skills_with_icons': remaining_skills_str_with_icons,
+                'remaining_skills_str2': remaining_skills_str2,  
+                'top_5_most_used_skills': top_5_most_used_skills,
+                'bottom_5_least_used_skills': bottom_5_least_used_skills,
+                'summary_label': summary_label, 
+                'mercenary': mercenary,  
+                'mercenary_equipment': mercenary_equipment,
+            }
+            _, mercenary_counts, mercenary_equipment, mercenary_names = analyze_mercenaries(filtered_characters)
+
+        # Ensure the correct percentage values are used
+        pie_data = df.groupby('Cluster').agg({
+            'Percentage': 'mean',  # Get the mean percentage for each cluster
+            'Cluster_Label': 'first'  # Use the first cluster label as representative
+        }).reset_index()
+
+        # Include other_skills in customdata
+        pie_data['other_skills_pie'] = pie_data['Cluster'].map(lambda cluster: clusters[cluster]['other_skills_pie'])
+
+        # Combine cluster label and percentage for the pie chart labels
+        pie_data['Cluster_Label_Percentage'] = pie_data.apply(lambda row: f"{row['Percentage']:.2f}% - Main Skills and avg points: {row['Cluster_Label']}", axis=1)
+
+        import plotly.express as px
+
+        # Get unique clusters
+        unique_clusters = sorted(df['Cluster'].unique())  # Sorting ensures consistent ordering
+
+        # Assign colors from a predefined palette
+        color_palette = px.colors.qualitative.Safe  # You can change this to Vivid, Bold, etc.
+        color_map = {cluster: color_palette[i % len(color_palette)] for i, cluster in enumerate(unique_clusters)}
+
+        # Create a pie chart
+        fig_pie = px.pie(
+            pie_data,
+            values='Percentage',
+            names='Cluster_Label_Percentage',
+            title=f"{what_class} Skills Distribution",
+            hover_data={'Cluster_Label': True, 'other_skills_pie': True},
+            color_discrete_map={row['Cluster_Label_Percentage']: color_map[row['Cluster']] for _, row in pie_data.iterrows()}  # ✅ Maps labels to the same colors
+        )
+
+        # Update customdata to pass Cluster_Label
+        fig_pie.update_traces(customdata=pie_data[['Cluster_Label', 'other_skills_pie']])
+
+        # Customize the hover template for the pie chart
+        fig_pie.update_traces(
+            textinfo='percent',  # Keep percentages on the pie slices
+            textposition='inside',  # Position percentages inside the pie slices
+            hovertemplate="<b>%{customdata[0]}</b><br>Other Skills and Average Point Investment:<br>%{customdata[1]}<extra></extra>",
+            marker=dict(line=dict(color='black', width=1)),  # Add a slight outline for clarity
+            pull=[0.05] * len(pie_data),  # Slightly pull slices apart to increase visibility
+            hole=0  # Ensure it's a full pie (not a donut)
+        )
+
+        # Position the legend outside the pie chart and adjust the pie chart size
+        fig_pie.update_layout(
+            legend=dict(
+                orientation="h",  # Horizontal legend
+                yanchor="top",
+                y=-0.15,  # Move it closer
+                xanchor="center",
+                x=0.5,  # Keep it centered
+                font=dict(size=10, color='white'),
+                bgcolor='rgba(0,0,0,0)',
+#                font=dict(color='white'),  # ✅ Transparent background
+            ),
+            paper_bgcolor='rgba(0,0,0,0)', # ✅ Transparent background
+            margin=dict(l=10, r=10, t=50, b=20),  # Reduce bottom margin to make more space
+            width=900,  # Set the width of the entire chart
+            height=600,  # Set the height of the entire chart
+            font=dict(color='white'),  # ✅ Makes all text white
+            title=dict(font=dict(color='white')),  # ✅ Ensures title is also white
+#            legend=dict(font=dict(color='white'))  # ✅ Ensures legend text is white
+        )
+
+        # Increase the pie size explicitly
+        fig_pie.update_traces(domain=dict(x=[0, 1], y=[0.1, 1]))  # Expands pie upward
+
+        # Save the pie chart as a PNG file
+        fig_pie.write_image(f"charts/hc{what_class}-clusters_distribution_pie.png")
+
+        # Create a DataFrame for visualization
+        plot_data = pd.DataFrame({
+            'PCA1': reduced_data[:, 0],
+            'PCA2': reduced_data[:, 1],
+            'Cluster': df['Cluster'],
+            'Cluster_Label': df['Cluster_Label'],
+            'Percentage': df['Percentage']
+        })
+
+        # Create an interactive scatter plot
+        fig_scatter = px.scatter(
+            plot_data,
+            x='PCA1',
+            y='PCA2',
+            color='Cluster',  # Assign color based on the cluster
+            title=f"{what_class} Skill Clusters (Ladder Top 200 {what_class}'s Highlighted)<br>This highlights how similar (or not) a character is to the rest<br>The tighter the grouping, the more they are alike",
+            hover_data={'Cluster_Label': True, 'Percentage': ':.2f%', 'Cluster': True},
+            color_discrete_map=color_map  # Use the same colors as the pie chart
+        )
+
+        # Customize the legend labels
+        for trace in fig_scatter.data:
+            if trace.name.isnumeric():  # Ensure that the trace name is numeric
+                trace.update(name=legend_labels[int(trace.name)])
+
+        # Customize hover template to include top skills and percentage
+        fig_scatter.update_traces(
+            hovertemplate="<b>Cluster skills and average point investment:</b><br> %{customdata[0]}<br>" +
+                        "This cluster (%{customdata[2]}) makes up %{customdata[1]:.2f}% of the total<extra></extra>"
+        )
+
+        # Hide the axis titles and tick labels
+        fig_scatter.update_layout(
+            xaxis_title=None,
+            yaxis_title=None,
+            xaxis_showticklabels=False,
+            yaxis_showticklabels=False
+        )
+
+        # Save the scatter plot as a PNG file
+        fig_scatter.write_image(f"charts/hc{what_class}-clusters_with_avg_points.png")
+
+        print("Pie chart and scatter plot saved as PNG files.")
+
+        # Sort clusters by percentage in descending order
+        sorted_clusters = dict(sorted(clusters.items(), key=lambda item: item[1]['character_count'], reverse=True))
+
+        # Split the entries into a list
+        entries = summary_label.strip().split("<br>\n")
+        # Remove any empty strings from the list (if any)
+        entries = [entry for entry in entries if entry.strip()]
+        # Sort the entries in descending order based on the percentage value
+        sorted_entries = sorted(entries, key=lambda x: float(x.split('%')[0]), reverse=False)
+        # Join the sorted entries back into a single string
+        sorted_summaries = sorted(summaries, key=lambda x: x[0], reverse=True)
+#        summary_label = "<br>".join(summary for _, summary in sorted_summaries)
+        #print(summary_label)
+
+##  summarize_favored_sorceress_trees same as above, but with columns for display
+        CLASS_SKILL_TREES = {
+            "Assassin": ["Traps", "Shadow Disciplines", "Martial Arts"],
+            "Amazon": ["Bow and Crossbow Skills", "Javelin and Spear Skills"],
+            "Barbarian": ["Combat Masteries", "Warcries", "Combat Skills"],
+            "Druid": ["Summoning Skills", "Shape Shifting Skills", "Elemental Skills"],            
+            "Necromancer": ["Curses", "Poison and Bone Skills", "Summoning Skills"],
+            "Paladin": ["Defensive Auras", "Offensive Auras", "Combat Skills"],
+            "Sorceress": ["Cold Skills", "Fire Skills", "Lightning Skills"],
+       }
+
+        def summarize_favored_class_trees(filtered_characters, tree_threshold=60, hybrid_threshold=35):
+            from collections import defaultdict
+
+            # Nest counts per class
+            favored_counts = defaultdict(lambda: defaultdict(int))
+            hybrid_combo_counts = defaultdict(lambda: defaultdict(int))
+            total_chars_per_class = defaultdict(int)
+
+            for char in filtered_characters:
+                class_name = char.get("Class")
+                skill_trees = CLASS_SKILL_TREES.get(class_name)
+                if not skill_trees:
+                    continue  # Skip unknown classes
+
+                tab_totals = {tab["Name"]: tab["Total"] for tab in char.get("SkillTabs", [])}
+                trees = {tree_name: tab_totals.get(tree_name, 0) for tree_name in skill_trees}
+                total_chars_per_class[class_name] += 1
+
+                # Count favored trees
+                for tree, pts in trees.items():
+                    if pts >= tree_threshold:
+                        favored_counts[class_name][tree] += 1
+
+                # Count hybrid combos
+                high_trees = [tree for tree, pts in trees.items() if pts >= hybrid_threshold]
+                if len(high_trees) >= 2:
+                    label = "all trees" if len(high_trees) == len(skill_trees) else " + ".join(sorted(high_trees))
+                    hybrid_combo_counts[class_name][label] += 1
+
+            # Build summary HTML
+            html_sections = []
+            for class_name in sorted(total_chars_per_class):
+                total_chars = total_chars_per_class[class_name]
+                favored = favored_counts[class_name]
+                hybrids = hybrid_combo_counts[class_name]
+
+                favored_lines = [
+                    f"&nbsp;&nbsp;&nbsp;&nbsp;{(count / total_chars) * 100:.2f}% of {class_name}s favor {tree}"
+                    for tree, count in sorted(favored.items(), key=lambda x: x[1], reverse=True)
+                ]
+
+                hybrid_lines = []
+                if hybrids:
+                    for label, count in sorted(hybrids.items(), key=lambda x: x[1], reverse=True):
+                        percent = (count / total_chars) * 100
+                        if percent < 1:
+                            hybrid_lines.append(f"&nbsp;&nbsp;&nbsp;&nbsp&lt;1% invest in {label}")
+                        else:
+                            hybrid_lines.append(f"&nbsp;&nbsp;&nbsp;&nbsp{percent:.0f}% invest in {label}")
+                else:
+                    hybrid_lines.append("&nbsp;&nbsp;&nbsp;&nbsp<i>No hybrid builds found</i>")
+
+                section_html = [
+                    f"<h3>{class_name}</h3>",
+                    "<table style='width:100%;'><tr><td style='vertical-align:top;'>",
+                    f"<b>Favored Trees ({tree_threshold} point investment):</b><br>",
+                    "<br>".join(favored_lines),
+                    "</td><td style='vertical-align:top;'>",
+                    f"<b>Hybrid Builds ({hybrid_threshold}+ Points in each tree):</b><br>",
+                    "<br>".join(hybrid_lines),
+                    "</td></tr></table>"
+                ]
+                html_sections.extend(section_html)
+
+            return "\n".join(html_sections)
+
+        skill_tree_mappings = {
+            "Amazon": {
+                "Javelin & Spear": {"Lightning Fury", "Charged Strike", "Jab", "Power Strike", "Plague Javelin", "Poison Javelin", "Fend"},
+                "Bow & Crossbow": {"Multiple Shot", "Immolation Arrow", "Freezing Arrow", "Fire Arrow", "Exploding Arrow", "Guided Arrow", "Magic Arrow", "Strafe"},
+            },
+            "Assassin":{
+                "Martial Arts": {"Claws of Thunder", "Fists of Fire", "Blades of Ice"},
+                "Trap": {"Wake of Fire", "Wake of Inferno", "Lightning Sentry", "Death Sentry", "Charged Bolt Sentry", "Shock Web"},
+        #        "Lightning Traps": {"Lightning Sentry", "Death Sentry", "Charged Bolt Sentry", "Shock Web"},
+
+            },
+            "Barbarian":{
+                "Warcry": {"War Cry"},
+                "Throw": {"Ethereal Throw", "Double Throw"},
+                "Whirling Axes": {"Whirling Axes", "Battle Cry"},
+                "Combat": {"Cleave", "Concentrate", "Bash", "Frenzy"},
+                "Whirlwind": {"Whirlwind"},
+            },
+            "Sorceress": {
+                "Melee Sorc Skills": {"Frigerate", "Enflame"},
+#                "Hybrid Skills": {"Blizzard", "Hydra"} ,
+#                "Hybrid Skills": {"Frozen Orb", "Hydra"},
+#                "Hybrid Skills": {"Freezing Pulse", "Hydra"},
+                "Cold Spells": {"Freezing Pulse", "Frozen Orb", "Blizzard", "Ice Bolt", "Cold Mastery", "Glacial Spike"},
+                "Lightning Spells": {"Nova", "Lightning", "Chain Lightning", "Lightning Mastery", "Thunder Storm"},
+                "Fire Spells": {"Fire Ball", "Meteor", "Hydra", "Fire Mastery", "Enflame"},
+            },
+            "Paladin": {
+                "FoH": {"Fist of the Heavens", "Holy Bolt"},
+                "Combat": {"Smite", "Charge", "Zeal", "Dashing Strike"},
+                "Hammerdins": {"Blessed Hammer", "Blessed Aim"}
+        #        "Offensive Auras": {"Fanaticism", "Conviction", "Holy Fire", "Holy Shock"},
+        #        "Defensive Auras": {"Defiance", "Resist Fire", "Resist Cold", "Resist Lightning"},
+            },
+            "Necromancer": {
+        #        "CE": {"Corpse Explosion"},
+                "Poison & Bone": {"Bone Spear", "Bone Spirit", "Poison Nova", "Teeth", "Corpse Explosion", "Deadly Poison"},
+                "Summoning": {"Raise Skeleton", "Skeleton Mastery", "Revive", "Clay Golem", "Fire Golem"},
+                "Curses": {"Hemorrhage", "Amplify Damage", "Decrepify", "Lower Resist", "Iron Maiden"},
+            },
+            "Druid": {
+                "Elemental": {"Hurricane", "Tornado", "Firestorm", "Molten Boulder"},
+                "Shape Shifting": {"Werewolf", "Werebear", "Feral Rage", "Maul"},
+                "Summoning": {"Raven", "Summon Grizzly", "Summon Dire Wolf"},
+            },
+        }
+        # Function to sort builds into categories
+        def organize_by_skill_tree(class_name, sorted_summaries):
+            if class_name not in skill_tree_mappings:
+                return "<br>".join(f"{pct:.2f}% {summary}" for pct, summary in sorted_summaries)
+
+            skill_trees = skill_tree_mappings[class_name]
+            tree_investment = {tree: 0 for tree in skill_trees}
+            sorted_builds = {tree: [] for tree in skill_trees}
+
+            for pct, summary in sorted_summaries:
+                assigned_tree = None
+                for tree, skills in skill_trees.items():
+                    if any(skill in summary for skill in skills):
+                        assigned_tree = tree
+                        break  # Only assign once
+
+                if assigned_tree:
+                    tree_investment[assigned_tree] += pct
+                    sorted_builds[assigned_tree].append(f" {summary}")  # ✅ Remove unnecessary breaks
+
+            final_summary = []
+            for tree, pct in tree_investment.items():
+                if pct > 0:
+                    final_summary.append(f"<br><strong>{pct:.2f}% of all {class_name}s favor {tree} </strong>")
+                    final_summary.extend(sorted_builds[tree])  # ✅ Ensures builds are close to category header
+
+            return "<br>".join(final_summary)  # ✅ Join without excessive spacing
+        
+        organize_by_skill_tree(what_class, sorted_summaries)
+
+        def organize_by_skill_tree_intro(class_name, sorted_summaries):
+            if class_name not in skill_tree_mappings:
+                return "<br>".join(f"{pct:.2f}% {summary}" for pct, summary in sorted_summaries)
+
+            skill_trees = skill_tree_mappings[class_name]
+            tree_investment = {tree: 0 for tree in skill_trees}
+            sorted_builds = {tree: [] for tree in skill_trees}
+
+            for pct, summary in sorted_summaries:
+                assigned_tree = None
+                for tree, skills in skill_trees.items():
+                    if any(skill in summary for skill in skills):
+                        assigned_tree = tree
+                        break  # Only assign once
+
+                if assigned_tree:
+                    tree_investment[assigned_tree] += pct
+                    sorted_builds[assigned_tree].append(f" {summary}")  # ✅ Remove unnecessary breaks
+
+            intro_summary = []
+            # Sort the dictionary by values in descending order
+            sorted_tree_investment = sorted(tree_investment.items(), key=lambda item: item[1], reverse=True)
+
+            for tree, pct in sorted_tree_investment:
+                if pct > 0:
+                    intro_summary.append(f"<strong>{pct:.2f}% of all {class_name}s favor {tree}</strong>")
+
+            return "<br>".join(intro_summary)  # ✅ Join without excessive spacing        
+        organize_by_skill_tree_intro(what_class, sorted_summaries)
+
+        amazon_summary =  ""       
+        amazon_summary = ""
+        assassin_summary = ""
+        barbarian_summary = ""
+        druid_summary = ""
+        necromancer_summary = ""
+        paladin_summary = ""
+        sorceress_summary = ""
+        intro_summary = ""
+
+#        amazon_summary = "<br><strong>46% of all Amazons favor Spear and Javelin Skills</strong><br>" \
+#                        "<strong>54% of all Amazons favor Bow Skills</strong><br><br>More detailed breakdown:<br>"
+#        assassin_summary = "<br><strong>70% of all Assasins favor Wof/WoI</strong><br>" \
+#                        "<strong>16% of all Assasins favor Martial Arts</strong><br><br>More detailed breakdown:<br>"
+#        barbarian_summary = "<br><strong>50% of all Barbs favor Whirling Axes</strong><br>" \
+#                        "<strong>3% of all Barbs favor Throwing</strong><br><br>More detailed breakdown:<br>"
+#        druid_summary = "<br><strong>40% of all Druids favor Shapeshifting</strong><br>" \
+#                        "<strong>30% of all Druids favor Summons</strong><br>" \
+#                        "<strong>30% of all Druids favor Elemental Skills</strong><br><br>More detailed breakdown:<br>"
+#        necromancer_summary = "<br><strong>52% of all Necros favor Hemo</strong><br>" \
+#                        "<strong>32% of all Necros favor CE</strong><br><br>More detailed breakdown:<br>"
+#        paladin_summary = "<br><strong>43% of all Paladins favor FoH</strong><br>" \
+#                        "<strong>21% of all Paladins are Hammerdins</strong><br><br>More detailed breakdown:<br>"
+#        sorceress_summary = "<br><strong>42% of all Sorcs favor Lightning</strong><br>" \
+#                        "<strong>42% of all Sorcs favor Cold</strong><br>" \
+#                        "<strong>14% of all Sorcs favor Fire</strong><br><br>More detailed breakdown:<br>"
+        
+        meta_tag = what_class + ", path of diablo, builds, stats, statistics, data, analysis, analytics, trends, "
+        structured_summary = organize_by_skill_tree(what_class, sorted_summaries)
+        intro_summary = organize_by_skill_tree_intro(what_class, sorted_summaries)
+
+        if what_class == "Amazon":
+            intro_summary = summarize_favored_class_trees(filtered_characters)
+            structured_summary_label = intro_summary + "<br><br>" + "<br>".join(summary for _, summary in sorted_summaries)
+#            summary_label = amazon_summary + "<br>".join(summary for _, summary in sorted_summaries)
+#            structured_summary_label = amazon_summary + "" + structured_summary
+#            intro_summary = intro_summary
+
+        elif what_class == "Assassin":
+            intro_summary = summarize_favored_class_trees(filtered_characters)
+            structured_summary_label = intro_summary + "<br><br>" + "<br>".join(summary for _, summary in sorted_summaries)
+#            summary_label = assassin_summary + "<br>".join(summary for _, summary in sorted_summaries)
+#            structured_summary_label = assassin_summary + "" + structured_summary
+#            intro_summary = intro_summary
+        elif what_class == "Barbarian":
+            summary_label = barbarian_summary + "<br>".join(summary for _, summary in sorted_summaries)
+            structured_summary_label = barbarian_summary + "" + structured_summary
+            intro_summary = intro_summary
+        elif what_class == "Druid":
+            intro_summary = summarize_favored_class_trees(filtered_characters)
+            structured_summary_label = intro_summary + "<br><br>" + "<br>".join(summary for _, summary in sorted_summaries)
+#            summary_label = druid_summary + "<br>".join(summary for _, summary in sorted_summaries)
+#            structured_summary_label = druid_summary + "" + structured_summary
+#            intro_summary = intro_summary
+        elif what_class == "Necromancer":
+            intro_summary = summarize_favored_class_trees(filtered_characters)
+            structured_summary_label = intro_summary + "<br><br>" + "<br>".join(summary for _, summary in sorted_summaries)
+#            summary_label = necromancer_summary + "<br>".join(summary for _, summary in sorted_summaries)
+#            structured_summary_label = necromancer_summary + "" + structured_summary
+#            intro_summary = intro_summary
+        elif what_class == "Paladin":
+            summary_label = paladin_summary + "<br>".join(summary for _, summary in sorted_summaries)
+            structured_summary_label = paladin_summary + "" + structured_summary
+            intro_summary = intro_summary
+        elif what_class == "Sorceress": 
+            intro_summary = summarize_favored_class_trees(filtered_characters)
+#            intro_summary = summarize_sorceress_with_hybrid_summary(filtered_characters)
+#            intro_summary = summarize_sorceress_with_hybrids(filtered_characters)
+#            intro_summary = summarize_sorceress_by_tree(filtered_characters)
+            structured_summary_label = intro_summary + "<br><br>" + "<br>".join(summary for _, summary in sorted_summaries)
+#        elif what_class == "Sorceress":
+#            summary_label = sorceress_summary + "<br>".join(summary for _, summary in sorted_summaries)
+#            structured_summary_label = sorceress_summary + "" + structured_summary
+#            meta_tag += "Sorc, Frigerate, Enflame, Blizzard, Hydra, Frozen Orb, Freezing Pulse, Ice Bolt, Cold Mastery, Glacial Spike, Nova, Lightning, Chain Lightning, Thunder Storm, Fire Ball, Meteor, Hydra, Fire Mastery"
+#            intro_summary = intro_summary
+        else:
+            structured_summary_label = structured_summary  # Default case
+
+        # Combine both versions for side-by-side comparison
+        full_summary_output = f"""
+        <h2>Build Trends</h2>
+        <p>{structured_summary_label}</p>
+        <hr>
+        <h2>Detailed Grouping Information, Ordered Highest to Lowest %</h2>
+        <p>{summary_label}</p>
+        """
+#        else: 
+#            summary_label = "<br>".join(summary for _, summary in sorted_summaries)
+
+#        summary_label = "<br>".join(summary for _, summary in sorted_summaries)
+        #print(summary_label)
+
+        # Ensure the cluster exists before adding merc_count
+        if cluster not in clusters:
+            clusters[cluster] = {}
+
+        clusters[cluster]['merc_count'] = merc_count
+
+    #    print(f"✅ Added merc data for cluster {cluster}:")
+    #    print(merc_count)
+
+        dt = datetime.now()
+        # format it to a string
+        timeStamp = dt.strftime('%Y-%m-%d %H:%M')
+
+        with open("sc_ladder.json", "r") as file:
+            all_characters = json.load(file)
+
+        sorted_runes, sorted_excluding_runes, all_other_items = socket_html(filtered_characters)
+
+        # Render the HTML report
+        template = Template(html_template)
+        html_content = template.render(clusters=sorted_clusters, 
+                                       what_class=what_class, 
+                                       top_5_most_used_skills=top_5_most_used_skills, 
+                                       bottom_5_least_used_skills=bottom_5_least_used_skills, 
+                                       summary_label=summary_label, merc_count=merc_count, 
+                                       mercenary=mercenary, mercenary_equipment=mercenary_equipment, 
+                                       timeStamp=timeStamp, # full_summary_output=full_summary_output, 
+                                       fun_facts_html=fun_facts_html,
+                                       historical_usage=historical_usage 
+
+                                       )  # Pass sorted clusters to the template
+
+
+        socketed_runes_html, socketed_excluding_runes_html, other_items_html = socket_html(filtered_characters)
+
+        filled_html_content = f"""{html_content}""".replace(
+                "{most_popular_runewords}", generate_list_items(most_common_runewords)
+            ).replace(
+                "{most_popular_uniques}", generate_list_items(most_common_uniques)
+            ).replace(
+                "{most_popular_set_items}", generate_list_items(most_common_set_items)
+            ).replace(
+                "{least_popular_runewords}", generate_list_items(least_common_runewords)
+            ).replace(
+                "{least_popular_uniques}", generate_list_items(least_common_uniques)
+            ).replace(
+                "{least_popular_set_items}", generate_list_items(least_common_set_items)
+            ).replace( 
+                "{all_runewords}", generate_all_list_items(all_runewords, runeword_users)
+            ).replace(
+                "{all_uniques}", generate_all_list_items(all_uniques, unique_users)
+            ).replace(
+                "{all_set}", generate_all_list_items(all_set, set_users)
+            ).replace(
+                "{all_synth}", generate_synth_list_items(synth_counter, synth_users)
+            ).replace(
+                "{timeStamp}", timeStamp
+            ).replace(
+                "{synth_user_count}", str(synth_user_count)
+            ).replace(
+                "{all_crafted}", generate_crafted_list_items(crafted_counters, crafted_users)
+            ).replace(
+                "{craft_user_count}", str(craft_user_count)
+            ).replace(
+                "{synth_source_data}", generate_synth_source_list(synth_sources)
+            ).replace(
+                "{synth_source_user_count}", str(synth_source_user_count)
+            ).replace(
+                "{all_magic}", generate_magic_list_items(magic_counters, magic_users)
+            ).replace(
+                "{magic_user_count}", str(magic_user_count)
+            ).replace(
+                "{all_rare}", generate_rare_list_items(rare_counters, rare_users)
+            ).replace(
+                "{rare_user_count}", str(rare_user_count)
+            ).replace(
+                "{sorted_just_socketed_runes}", socketed_runes_html  # ✅ Correctly insert formatted HTML
+            ).replace(
+                "{sorted_just_socketed_excluding_runewords_runes}", socketed_excluding_runes_html
+            ).replace(
+                "{all_other_items}", other_items_html
+            ).replace(
+                "{fun_facts_html}", fun_facts_html
+            ).replace(
+                "{all_maxed}", generate_maxed_skills_section(maxed_skills, filtered_characters)
+            ).replace(
+                "{meta_tag}", meta_tag
+            ).replace(
+                "{intro_summary}", intro_summary
+            ).replace(
+                "{html_output}", html_output
+            )
+
+        # Save the report to a file
+        output_file = f"hc{what_class}.html"
+        with open(output_file, "w") as file:
+            file.write(filled_html_content)
+
+        print(f"Cluster analysis report saved to {output_file}")
+    pass
+
+    # ✅ Process all 7 classes
+    for class_info in classes:
+        generate_report(**class_info, all_characters=all_characters)
 
 
 def main():
     analyze_top_accounts()
     MakeHome()
     MakehcHome()
+    MakeClassPages()
+    MakehcClassPages()
 
 
 if __name__ == "__main__":
