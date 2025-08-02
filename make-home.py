@@ -23,6 +23,120 @@ from matplotlib.font_manager import FontProperties
 import statistics
 import html
 
+def analyze_top_accounts():
+    base_ladder_url = "https://beta.pathofdiablo.com/api/ladder/13/0/0/"
+    all_characters = fetch_1kladder_characters(base_ladder_url, start_page=1, end_page=5)
+    all_characters = [char for char in all_characters if char.get('account')]
+
+    level_counter = Counter(char['level'] for char in all_characters)
+
+#    print("\n🎯 High-Level Character Counts:")
+#    for level in [99, 98, 97, 96, 95]:
+#        print(f"Level {level}: {level_counter.get(level, 0)} characters")
+
+    level99_accounts = defaultdict(int)
+
+    for char in all_characters:
+        if char['level'] == 99:
+            level99_accounts[char['account']] += 1
+
+    top_99s = sorted(level99_accounts.items(), key=lambda x: x[1], reverse=True)[:5]
+#    print("\n🥇 Top Accounts by Number of Level 99 Characters:")
+#    for acct, count in top_99s:
+#        print(f"{acct}: {count} characters at level 99")
+
+    account_class_counts = defaultdict(lambda: defaultdict(int))
+
+    for char in all_characters:
+        acct = char['account']
+        class_code = char['charClass']  # e.g., "sor"
+        account_class_counts[acct][class_code] += 1
+
+    #Who has the most amazons?
+    most_zons = sorted(account_class_counts.items(), key=lambda x: x[1].get("ama", 0), reverse=True)[:5]
+#    print("\n🧙 Accounts with Most Amazons:")
+#    for acct, class_count in most_zons:
+#        print(f"{acct}: {class_count.get('ama', 0)} Amazons")
+    #Who has the most assassins?
+    most_sins = sorted(account_class_counts.items(), key=lambda x: x[1].get("asn", 0), reverse=True)[:5]
+#    print("\n🧙 Accounts with Most Assassins:")
+#    for acct, class_count in most_sins:
+#        print(f"{acct}: {class_count.get('asn', 0)} Assassins")
+    #Who has the most barbs?
+    most_barbs = sorted(account_class_counts.items(), key=lambda x: x[1].get("bar", 0), reverse=True)[:5]
+#    print("\n🧙 Accounts with Most Barbarians:")
+#    for acct, class_count in most_barbs:
+#        print(f"{acct}: {class_count.get('bar', 0)} Barbarians")
+    #Who has the most druids?
+    most_druids = sorted(account_class_counts.items(), key=lambda x: x[1].get("dru", 0), reverse=True)[:5]
+#    print("\n🧙 Accounts with Most Druids:")
+#    for acct, class_count in most_druids:
+#        print(f"{acct}: {class_count.get('dru', 0)} Druids")
+    #Who has the most necros?
+    most_necros = sorted(account_class_counts.items(), key=lambda x: x[1].get("nec", 0), reverse=True)[:5]
+#    print("\n🧙 Accounts with Most Necromancers:")
+#    for acct, class_count in most_necros:
+#        print(f"{acct}: {class_count.get('nec', 0)} Necromancers")
+    #Who has the most paladins?
+    most_pallys = sorted(account_class_counts.items(), key=lambda x: x[1].get("pal", 0), reverse=True)[:5]
+#    print("\n🧙 Accounts with Most Paladins:")
+#    for acct, class_count in most_pallys:
+#        print(f"{acct}: {class_count.get('pal', 0)} Paladins")
+    #Who has the most sorceresses?
+    most_sorcs = sorted(account_class_counts.items(), key=lambda x: x[1].get("sor", 0), reverse=True)[:5]
+#    print("\n🧙 Accounts with Most Sorceresses:")
+#    for acct, class_count in most_sorcs:
+#        print(f"{acct}: {class_count.get('sor', 0)} sorceresses")
+
+## Who has all the classes?
+    # Map short class codes used by the API to full names (or use your preferred naming)
+    CLASS_CODES = {"ama", "asn", "bar", "dru", "nec", "pal", "sor"}
+
+    # Track each account's set of classes
+    account_class_sets = defaultdict(set)
+
+    for char in all_characters:
+        acct = char['account']
+        char_class = char['charClass']
+        account_class_sets[acct].add(char_class)
+
+    # Count accounts that have all 7 classes
+    complete_class_accounts = [acct for acct, classes in account_class_sets.items() if CLASS_CODES.issubset(classes)]
+
+#    print(f"\n📈 Accounts with all 7 classes: {len(complete_class_accounts)}")
+#    print("Examples:", ", ".join(complete_class_accounts[:5]))
+
+    account_stats = defaultdict(lambda: {'count': 0, 'levels': 0, 'xp': 0})
+
+    for char in all_characters:
+        acct = char.get('account')
+        if not acct:
+            continue
+        account_stats[acct]['count'] += 1
+        account_stats[acct]['levels'] += char.get('level', 0)
+        account_stats[acct]['xp'] += char.get('exp', 0)
+
+    # Convert to list of (account, stats) and sort
+    sorted_by_xp = sorted(account_stats.items(), key=lambda x: x[1]['xp'], reverse=True)[:5]
+    sorted_by_levels = sorted(account_stats.items(), key=lambda x: x[1]['levels'], reverse=True)[:5]
+    sorted_by_count = sorted(account_stats.items(), key=lambda x: x[1]['count'], reverse=True)[:5]
+
+#    print("\n📊 Top Accounts from Top 1,000 Characters:")
+
+#    print("\n🔸 Top 5 by Total XP:")
+    for acct, stats in sorted_by_xp:
+        avg_lvl = stats['levels'] / stats['count']
+#        print(f"{acct}: {stats['xp']:,} XP, {stats['count']} chars, avg level {avg_lvl:.2f}")
+
+#    print("\n🔸 Top 5 by Total Levels:")
+    for acct, stats in sorted_by_levels:
+        avg_lvl = stats['levels'] / stats['count']
+#        print(f"{acct}: {stats['levels']} levels, {stats['count']} chars, avg level {avg_lvl:.2f}")
+
+#    print("\n🔸 Top 5 by Character Count:")
+    for acct, stats in sorted_by_count:
+        avg_lvl = stats['levels'] / stats['count']
+
 def fetch_1kladder_characters(base_ladder_url, start_page=1, end_page=5):
     """Fetch all characters from a range of ladder pages, skipping page 0 by default."""
     all_characters = []
@@ -6408,6 +6522,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 def main():
+    analyze_top_accounts()
     MakeHome()
     MakehcHome()
 
