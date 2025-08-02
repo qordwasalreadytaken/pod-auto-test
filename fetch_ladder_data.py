@@ -81,7 +81,8 @@ def fetch_all_char_data(mode):
     unique_characters = {char["charName"]: char for char in all_characters}.values()
 
     # Save raw ladder
-    raw_filename = f"raw_ladder_{mode}.json"
+#    raw_filename = f"raw_ladder_{mode}.json"
+    raw_filename = f"{mode}_raw_ladder.json"
     with open(raw_filename, "w") as f:
         json.dump(list(unique_characters), f, indent=2)
 
@@ -89,7 +90,8 @@ def fetch_all_char_data(mode):
     full_summaries = fetch_char_summaries(unique_characters)
 
     # Save full summaries
-    full_filename = f"ladder_{mode}.json"
+#    full_filename = f"ladder_{mode}.json"
+    full_filename = f"{mode}_ladder.json"
     with open(full_filename, "w") as f:
         json.dump(full_summaries, f, indent=2)
 
