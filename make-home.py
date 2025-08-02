@@ -3196,6 +3196,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     print("HTML file generated successfully.")
 
+def fetch_ladder_characters(base_ladder_url, start_page=1, end_page=5):
+    """Fetch all characters from a range of ladder pages, skipping page 0 by default."""
+    all_characters = []
+    for page in range(start_page, end_page + 1):  # Inclusive range
+        ladder_url = f"{base_ladder_url}{page}"
+        print(f"Fetching {ladder_url}")
+        response = requests.get(ladder_url)
+        if response.status_code == 200:
+            ladder_data = response.json()
+            all_characters.extend(ladder_data.get("ladder", []))
+        else:
+            print(f"⚠️ Failed to fetch page {page}: {response.status_code}")
+    return all_characters
 
 def MakehcHome():
     # Define the consolidated JSON file path
