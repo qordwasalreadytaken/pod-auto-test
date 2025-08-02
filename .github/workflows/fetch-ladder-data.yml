@@ -30,4 +30,4 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "🔁 Daily update of sc_ladder.json and hc_ladder.json"
-          file_pattern: sc_ladder.json hc_ladder.json
+          file_pattern: "*.json charts/*"
