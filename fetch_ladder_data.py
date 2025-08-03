@@ -55,7 +55,7 @@ def generate_pie_chart(class_counts):
         autotext.set_color('black')
 
     plt.axis('equal')  # Ensures the pie chart is circular
-    plt.savefig("pod-stats/charts/1kclass_distribution.png", dpi=300, bbox_inches='tight', transparent=True)
+    plt.savefig("charts/1kclass_distribution.png", dpi=300, bbox_inches='tight', transparent=True)
     plt.close()  # Avoid memory issues
     print("✅ Pie chart saved as 1kclass_distribution.png")
 
