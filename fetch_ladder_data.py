@@ -114,7 +114,8 @@ def fetch_all_char_data(mode):
 
     # Top 1000
     all_characters = fetch_ladder_characters(base_url, start_page=1, end_page=5)
-    class_counts = count_classes(all_characters)
+    top_1000_characters = {char["charName"]: char for char in all_characters}.values()
+    class_counts = count_classes(top_1000_characters)
     generate_pie_chart(class_counts)
     # Top 200 per class
     classes = {
