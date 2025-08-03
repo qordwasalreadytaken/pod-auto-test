@@ -12,7 +12,7 @@ from matplotlib.font_manager import FontProperties
 
 def count_classes(characters):
     """Count the class distribution for the top 1,000 characters."""
-    return Counter(char.get("Class", "Unknown") for char in characters)
+    return Counter(char.get("charClass", "Unknown") for char in characters)
 
 def generate_pie_chart(class_counts):
     """Generate a pie chart for class distribution of the top 1,000 characters."""
@@ -72,6 +72,19 @@ def fetch_ladder_characters(base_ladder_url, start_page=1, end_page=5):
             print(f"⚠️ Failed to fetch page {page}: {response.status_code}")
     return all_characters
 
+def fetch_1kladder_characters(base_ladder_url, pages):
+    """Fetch all characters from multiple pages of the ladder."""
+    all_characters = []
+    for page in range(0, pages + 1):
+        ladder_url = f"{base_ladder_url}{page}"
+        print(f"Fetching {ladder_url}")
+        response = requests.get(ladder_url)
+        if response.status_code == 200:
+            ladder_data = response.json()
+            all_characters.extend(ladder_data.get("ladder", []))
+        else:
+            print(f"⚠️ Failed to fetch page {page}: {response.status_code}")
+    return all_characters
 
 def fetch_char_summaries(characters):
     char_url = "https://beta.pathofdiablo.com/api/characters/{char_name}/summary"
@@ -113,7 +126,8 @@ def fetch_all_char_data(mode):
     char_url = "https://beta.pathofdiablo.com/api/characters/{char_name}/summary"
 
     # Top 1000
-    all_characters = fetch_ladder_characters(base_url, start_page=1, end_page=5)
+#    all_characters = fetch_1kladder_characters(base_url, start_page=1, end_page=5)
+    all_characters = fetch_1kladder_characters(f"{base_url}0/", 5)
     top_1000_characters = {char["charName"]: char for char in all_characters}.values()
     class_counts = count_classes(top_1000_characters)
     generate_pie_chart(class_counts)
