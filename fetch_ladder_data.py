@@ -10,6 +10,10 @@ pp = pprint.PrettyPrinter(indent=4)
 import matplotlib.pyplot as plt
 from matplotlib.font_manager import FontProperties
 
+def count_classes(characters):
+    """Count the class distribution for the top 1,000 characters."""
+    return Counter(char.get("charClass", "Unknown") for char in characters)
+
 def generate_pie_chart(class_counts):
     """Generate a pie chart for class distribution of the top 1,000 characters."""
     classes = list(class_counts.keys())
@@ -110,7 +114,8 @@ def fetch_all_char_data(mode):
 
     # Top 1000
     all_characters = fetch_ladder_characters(base_url, start_page=1, end_page=5)
-    generate_pie_chart(all_characters)
+    class_counts = count_classes(all_characters)
+    generate_pie_chart(class_counts)
     # Top 200 per class
     classes = {
         "Amazon": "1/",
