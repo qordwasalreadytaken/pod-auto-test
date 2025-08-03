@@ -4,7 +4,56 @@ import os
 import time
 from collections import Counter
 import matplotlib.pyplot as plt
+from datetime import datetime
+import pprint
+pp = pprint.PrettyPrinter(indent=4)
+import matplotlib.pyplot as plt
+from matplotlib.font_manager import FontProperties
 
+def generate_pie_chart(class_counts):
+    """Generate a pie chart for class distribution of the top 1,000 characters."""
+    classes = list(class_counts.keys())
+    counts = list(class_counts.values())
+
+    if not counts:
+        print("⚠️ No characters found for pie chart.")
+        return
+
+    armory = FontProperties(fname='armory/font/avqest.ttf')  # Update path if needed
+
+    def make_autopct(values):
+        def my_autopct(pct):
+            total = sum(values)
+            val = int(round(pct * total / 100.0))
+            return f'{pct:.1f}% ({val})'
+        return my_autopct
+
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    plt.figure(figsize=(22, 22))
+    plt.subplots_adjust(top=0.5, bottom=0.15)
+
+    wedges, texts, autotexts = plt.pie(
+        counts, labels=classes, autopct=make_autopct(counts), startangle=250,
+        colors=plt.cm.Paired.colors, radius=1.4,
+        textprops={'fontsize': 30, 'color': 'white', 'fontproperties': armory}
+    )
+
+    title = plt.title(
+        f"Class Distribution of Top 1,000 Characters\n\nAs of {timestamp}",
+        pad=50, fontsize=45, fontproperties=armory, loc='left', color="white"
+    )
+    title.set_fontsize(45)  # 🔹 Force title size after creation
+
+    for text in texts:
+        text.set_fontsize(35)  # Class labels
+    for autotext in autotexts:
+        autotext.set_fontsize(25)  # Percentages on slices
+        autotext.set_color('black')
+
+    plt.axis('equal')  # Ensures the pie chart is circular
+    plt.savefig("pod-stats/charts/1kclass_distribution.png", dpi=300, bbox_inches='tight', transparent=True)
+    plt.close()  # Avoid memory issues
+    print("✅ Pie chart saved as 1kclass_distribution.png")
 
 def fetch_ladder_characters(base_ladder_url, start_page=1, end_page=5):
     all_characters = []
@@ -61,7 +110,7 @@ def fetch_all_char_data(mode):
 
     # Top 1000
     all_characters = fetch_ladder_characters(base_url, start_page=1, end_page=5)
-
+    generate_pie_chart(all_characters)
     # Top 200 per class
     classes = {
         "Amazon": "1/",
