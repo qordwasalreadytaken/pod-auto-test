@@ -2013,8 +2013,8 @@
     "account": "FilthyCasual",
     "country": "US",
     "isPatron": null,
-    "online": 42927,
-    "ingame": "FilthyCasual",
+    "online": null,
+    "ingame": null,
     "twitch": "",
     "viewers": null,
     "maxLevelDate": null
