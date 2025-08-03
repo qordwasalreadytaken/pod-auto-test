@@ -12,7 +12,7 @@ from matplotlib.font_manager import FontProperties
 
 def count_classes(characters):
     """Count the class distribution for the top 1,000 characters."""
-    return Counter(char.get("charClass", "Unknown") for char in characters)
+    return Counter(char.get("Class", "Unknown") for char in characters)
 
 def generate_pie_chart(class_counts):
     """Generate a pie chart for class distribution of the top 1,000 characters."""
