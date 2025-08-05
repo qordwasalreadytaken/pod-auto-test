@@ -125,6 +125,17 @@ def fetch_all_char_data(mode):
     base_url = f"https://beta.pathofdiablo.com/api/ladder/13/{'1' if is_hc else '0'}/"
     char_url = "https://beta.pathofdiablo.com/api/characters/{char_name}/summary"
 
+    # ✅ Define class-specific suffixes early
+    classes = {
+        "Amazon": "1/",
+        "Assassin": "7/",
+        "Barbarian": "5/",
+        "Druid": "6/",
+        "Necromancer": "3/",
+        "Paladin": "4/",
+        "Sorceress": "2/"
+    }
+
     # Step 1: Fetch only the top 1,000 characters (pages 0–5)
     top_1k_characters = fetch_ladder_characters(f"{base_url}0/", 5)
     top_1k_dict = {char["charName"]: char for char in top_1k_characters}
@@ -143,26 +154,8 @@ def fetch_all_char_data(mode):
 
     # Deduplicate everything (for json saving and summary fetching)
     unique_characters = {char["charName"]: char for char in all_characters}.values()
-    # Top 200 per class
-    classes = {
-        "Amazon": "1/",
-        "Assassin": "7/",
-        "Barbarian": "5/",
-        "Druid": "6/",
-        "Necromancer": "3/",
-        "Paladin": "4/",
-        "Sorceress": "2/"
-    }
-
-    for _, suffix in classes.items():
-        class_url = base_url + suffix
-        all_characters.extend(fetch_ladder_characters(class_url, start_page=1, end_page=1))
-
-    # Deduplicate
-    unique_characters = {char["charName"]: char for char in all_characters}.values()
 
     # Save raw ladder
-#    raw_filename = f"raw_ladder_{mode}.json"
     raw_filename = f"{mode}_raw_ladder.json"
     with open(raw_filename, "w") as f:
         json.dump(list(unique_characters), f, indent=2)
@@ -171,7 +164,6 @@ def fetch_all_char_data(mode):
     full_summaries = fetch_char_summaries(unique_characters)
 
     # Save full summaries
-#    full_filename = f"ladder_{mode}.json"
     full_filename = f"{mode}_ladder.json"
     with open(full_filename, "w") as f:
         json.dump(full_summaries, f, indent=2)
@@ -183,6 +175,7 @@ def fetch_all_char_data(mode):
     print(f"✅ {mode.upper()} complete: {len(full_summaries)} characters")
     print(f"📄 JSON saved to {full_filename}")
     print(f"📈 Chart saved to {chart_path}")
+
 
 
 def main():
