@@ -125,19 +125,24 @@ def fetch_all_char_data(mode):
     base_url = f"https://beta.pathofdiablo.com/api/ladder/13/{'1' if is_hc else '0'}/"
     char_url = "https://beta.pathofdiablo.com/api/characters/{char_name}/summary"
 
-    # Top 1000
-#    all_characters = fetch_1kladder_characters(base_url, start_page=1, end_page=5)
-    all_characters = fetch_1kladder_characters(f"{base_url}0/", 5)
-#    top_1000_characters = {char["charName"]: char for char in all_characters}.values()
-    # Deduplicate by name
-    unique_characters_dict = {char["charName"]: char for char in all_characters}
-    unique_characters = list(unique_characters_dict.values())
-    # Sort by rank (lower rank = better)
-    top_1000_characters = sorted(unique_characters, key=lambda c: c.get("rank", float("inf")))[:1000]
-#
-    class_counts = count_classes(top_1000_characters)
+    # Step 1: Fetch only the top 1,000 characters (pages 0–5)
+    top_1k_characters = fetch_ladder_characters(f"{base_url}0/", 5)
+    top_1k_dict = {char["charName"]: char for char in top_1k_characters}
+    top_1k_unique = list(top_1k_dict.values())
+
+    # Step 2: Generate pie chart based ONLY on top 1,000
+    class_counts = count_classes(top_1k_unique)
     generate_pie_chart(class_counts)
 
+    # Step 3: Add class-specific characters to build the full data set
+    all_characters = top_1k_unique.copy()
+
+    for _, suffix in classes.items():
+        class_url = base_url + suffix
+        all_characters.extend(fetch_ladder_characters(class_url, start_page=1, end_page=1))
+
+    # Deduplicate everything (for json saving and summary fetching)
+    unique_characters = {char["charName"]: char for char in all_characters}.values()
     # Top 200 per class
     classes = {
         "Amazon": "1/",
