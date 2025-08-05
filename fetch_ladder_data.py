@@ -174,6 +174,7 @@ def GetAllCharData():
 
     print(f"✅ Saved {len(character_data)} characters to sc_ladder.json (top 1,000 + class-specific)")
 
+
 def GetAllHCCharData():
     base_ladder_url = "https://beta.pathofdiablo.com/api/ladder/13/1/"  # Softcore
     char_url = "https://beta.pathofdiablo.com/api/characters/{char_name}/summary"
