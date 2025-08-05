@@ -128,9 +128,16 @@ def fetch_all_char_data(mode):
     # Top 1000
 #    all_characters = fetch_1kladder_characters(base_url, start_page=1, end_page=5)
     all_characters = fetch_1kladder_characters(f"{base_url}0/", 5)
-    top_1000_characters = {char["charName"]: char for char in all_characters}.values()
+#    top_1000_characters = {char["charName"]: char for char in all_characters}.values()
+    # Deduplicate by name
+    unique_characters_dict = {char["charName"]: char for char in all_characters}
+    unique_characters = list(unique_characters_dict.values())
+    # Sort by rank (lower rank = better)
+    top_1000_characters = sorted(unique_characters, key=lambda c: c.get("rank", float("inf")))[:1000]
+#
     class_counts = count_classes(top_1000_characters)
     generate_pie_chart(class_counts)
+
     # Top 200 per class
     classes = {
         "Amazon": "1/",
