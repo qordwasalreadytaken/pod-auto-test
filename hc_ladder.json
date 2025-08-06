@@ -121814,7 +121814,7 @@
     "Class": "Necromancer",
     "Stats": {
       "Level": 90,
-      "Experience": 1741481433,
+      "Experience": 1742712621,
       "Strength": 156,
       "Dexterity": 25,
       "Vitality": 334,
@@ -121823,8 +121823,8 @@
       "Life": 1446,
       "BaseMana": 203,
       "Mana": 405,
-      "Gold": 192421,
-      "Stashed": 1930374
+      "Gold": 0,
+      "Stashed": 2380482
     },
     "Bonus": {
       "Strength": 1,
