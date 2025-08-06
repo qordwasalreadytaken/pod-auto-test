@@ -2951,7 +2951,19 @@ def MakeHome():
 <div class="content">
 {bowbasehtml_output}
 </div>
-
+<br>
+<h2 id="all-items-slot">Item Popularity by Slot
+    <a href="#all-items-slot" class="anchor-link">
+        <img src="icons/anchor.png" alt="🔗" class="anchor-icon">
+    </a>
+</h2>
+<button type="button" class="collapsible sets-button">
+    <img src="icons/Special_click.png" alt="Synth Open" class="icon open-icon hidden">
+    <img src="icons/Special.png" alt="Synth Close" class="icon close-icon">
+</button>  
+<div class="content">
+{item_summary_by_category}
+</div>
 
 <br>
 
@@ -6073,6 +6085,19 @@ def MakehcHome():
 </button>  
 <div class="content">
 {bowbasehtml_output}
+</div>
+<br>
+<h2 id="all-items-slot">Item Popularity by Slot
+    <a href="#all-items-slot" class="anchor-link">
+        <img src="icons/anchor.png" alt="🔗" class="anchor-icon">
+    </a>
+</h2>
+<button type="button" class="collapsible sets-button">
+    <img src="icons/Special_click.png" alt="Synth Open" class="icon open-icon hidden">
+    <img src="icons/Special.png" alt="Synth Close" class="icon close-icon">
+</button>  
+<div class="content">
+{item_summary_by_category}
 </div>
 <br>
 <hr>
