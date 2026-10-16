@@ -2107,7 +2107,7 @@
     "Class": "Sorceress",
     "Stats": {
       "Level": 98,
-      "Experience": 3384403075,
+      "Experience": 3384411699,
       "Strength": 70,
       "Dexterity": 25,
       "Vitality": 450,
@@ -2116,7 +2116,7 @@
       "Life": 2377,
       "BaseMana": 229,
       "Mana": 975,
-      "Gold": 517938,
+      "Gold": 543401,
       "Stashed": 2500000
     },
     "Bonus": {
@@ -4045,29 +4045,6 @@
         "Worn": ""
       },
       {
-        "Quality": "Unknown",
-        "ID": "0",
-        "QualityCode": "",
-        "Title": "Flawless Skull",
-        "Tag": "Flawless Skull",
-        "TextTag": "Flawless Skull",
-        "Ethereal": "False",
-        "Enhanced": "False",
-        "ItemLevel": "0",
-        "LevelReq": 15,
-        "SocketCount": "0",
-        "PropertyList": [],
-        "Position": {
-          "x": 7,
-          "y": 2
-        },
-        "Size": {
-          "invheight": 1,
-          "invwidth": 1
-        },
-        "Worn": ""
-      },
-      {
         "Quality": "Magic",
         "ID": "4063341948",
         "QualityCode": "q_magic",
@@ -4133,6 +4110,29 @@
         "Position": {
           "x": 7,
           "y": 4
+        },
+        "Size": {
+          "invheight": 1,
+          "invwidth": 1
+        },
+        "Worn": ""
+      },
+      {
+        "Quality": "Unknown",
+        "ID": "0",
+        "QualityCode": "",
+        "Title": "Flawless Skull",
+        "Tag": "Flawless Skull",
+        "TextTag": "Flawless Skull",
+        "Ethereal": "False",
+        "Enhanced": "False",
+        "ItemLevel": "0",
+        "LevelReq": 15,
+        "SocketCount": "0",
+        "PropertyList": [],
+        "Position": {
+          "x": 7,
+          "y": 2
         },
         "Size": {
           "invheight": 1,
@@ -124671,16 +124671,16 @@
     "Class": "Barbarian",
     "Stats": {
       "Level": 96,
-      "Experience": 2736782644,
+      "Experience": 2743487975,
       "Strength": 30,
       "Dexterity": 90,
       "Vitality": 445,
       "Energy": 10,
       "BaseLife": 1985,
-      "Life": 2890,
+      "Life": 4495,
       "BaseMana": 105,
       "Mana": 284,
-      "Gold": 591029,
+      "Gold": 434435,
       "Stashed": 2500000
     },
     "Bonus": {
@@ -124850,10 +124850,10 @@
         ]
       }
     ],
-    "MercenaryExperience": 93132914,
+    "MercenaryExperience": 98335250,
     "MercenaryType": "Desert Mercenary",
     "MercenaryName": "Gulzar",
-    "MercenaryLevel": "91",
+    "MercenaryLevel": "93",
     "Equipped": [
       {
         "Quality": "Unique",
@@ -124865,7 +124865,7 @@
         "Ethereal": "False",
         "Enhanced": "True",
         "Defense": "66",
-        "Durability": "8",
+        "Durability": "7",
         "DurabilityMaximum": "16",
         "ItemLevel": "94",
         "LevelReq": 63,
@@ -124956,7 +124956,7 @@
         "Ethereal": "False",
         "Enhanced": "True",
         "Defense": "445",
-        "Durability": "17",
+        "Durability": "9",
         "DurabilityMaximum": "20",
         "ItemLevel": "85",
         "LevelReq": 65,
@@ -125104,7 +125104,7 @@
         "Ethereal": "False",
         "Enhanced": "False",
         "Defense": "102",
-        "Durability": "9",
+        "Durability": "6",
         "DurabilityMaximum": "12",
         "ItemLevel": "95",
         "LevelReq": 62,
@@ -125189,6 +125189,40 @@
         "Worn": "helmet"
       },
       {
+        "Quality": "Craft",
+        "ID": "382160983",
+        "QualityCode": "q_crafted",
+        "Title": "Skull Claw",
+        "Tag": "Gauntlets",
+        "TextTag": "Gaunlets(H)",
+        "Ethereal": "False",
+        "Enhanced": "True",
+        "Defense": "16",
+        "Durability": "17",
+        "DurabilityMaximum": "24",
+        "ItemLevel": "96",
+        "LevelReq": 70,
+        "SocketCount": "0",
+        "PropertyList": [
+          "\u00ffc1Corrupted",
+          "6% Life stolen per hit",
+          "10% Chance of Crushing Blow",
+          "+50% Enhanced Defense",
+          "+13 to Dexterity",
+          "+11 to Life",
+          "21% Better Chance of Getting Magic Items"
+        ],
+        "Position": {
+          "x": 10,
+          "y": 0
+        },
+        "Size": {
+          "invheight": 2,
+          "invwidth": 2
+        },
+        "Worn": "gloves"
+      },
+      {
         "Quality": "Unique",
         "ID": "115759673",
         "QualityCode": "q_unique",
@@ -125198,7 +125232,7 @@
         "Ethereal": "False",
         "Enhanced": "True",
         "Defense": "12",
-        "Durability": "5",
+        "Durability": "18",
         "DurabilityMaximum": "18",
         "ItemLevel": "46",
         "LevelReq": 22,
@@ -125222,40 +125256,6 @@
           "invwidth": 2
         },
         "Worn": "boots"
-      },
-      {
-        "Quality": "Craft",
-        "ID": "382160983",
-        "QualityCode": "q_crafted",
-        "Title": "Skull Claw",
-        "Tag": "Gauntlets",
-        "TextTag": "Gaunlets(H)",
-        "Ethereal": "False",
-        "Enhanced": "True",
-        "Defense": "16",
-        "Durability": "20",
-        "DurabilityMaximum": "24",
-        "ItemLevel": "96",
-        "LevelReq": 70,
-        "SocketCount": "0",
-        "PropertyList": [
-          "\u00ffc1Corrupted",
-          "6% Life stolen per hit",
-          "10% Chance of Crushing Blow",
-          "+50% Enhanced Defense",
-          "+13 to Dexterity",
-          "+11 to Life",
-          "21% Better Chance of Getting Magic Items"
-        ],
-        "Position": {
-          "x": 10,
-          "y": 0
-        },
-        "Size": {
-          "invheight": 2,
-          "invwidth": 2
-        },
-        "Worn": "gloves"
       },
       {
         "Quality": "Superior",
@@ -125779,7 +125779,7 @@
         "Enhanced": "False",
         "Block": "47",
         "Defense": "147",
-        "Durability": "89",
+        "Durability": "87",
         "DurabilityMaximum": "86",
         "ItemLevel": "89",
         "LevelReq": 65,
@@ -126453,52 +126453,6 @@
         "Worn": ""
       },
       {
-        "Quality": "Unknown",
-        "ID": "0",
-        "QualityCode": "",
-        "Title": "Flawless Skull",
-        "Tag": "Flawless Skull",
-        "TextTag": "Flawless Skull",
-        "Ethereal": "False",
-        "Enhanced": "False",
-        "ItemLevel": "0",
-        "LevelReq": 15,
-        "SocketCount": "0",
-        "PropertyList": [],
-        "Position": {
-          "x": 8,
-          "y": 2
-        },
-        "Size": {
-          "invheight": 1,
-          "invwidth": 1
-        },
-        "Worn": ""
-      },
-      {
-        "Quality": "Normal",
-        "ID": "1233655451",
-        "QualityCode": "q_normal",
-        "Title": "Key",
-        "Tag": "Key",
-        "TextTag": "Skeleton Key",
-        "Ethereal": "False",
-        "Enhanced": "False",
-        "ItemLevel": "99",
-        "LevelReq": 0,
-        "SocketCount": "0",
-        "PropertyList": [],
-        "Position": {
-          "x": 7,
-          "y": 0
-        },
-        "Size": {
-          "invheight": 1,
-          "invwidth": 1
-        },
-        "Worn": ""
-      },
-      {
         "Quality": "Magic",
         "ID": "929246068",
         "QualityCode": "q_magic",
@@ -126540,29 +126494,6 @@
         "Position": {
           "x": 7,
           "y": 4
-        },
-        "Size": {
-          "invheight": 1,
-          "invwidth": 1
-        },
-        "Worn": ""
-      },
-      {
-        "Quality": "Unknown",
-        "ID": "0",
-        "QualityCode": "",
-        "Title": "Flawless Skull",
-        "Tag": "Flawless Skull",
-        "TextTag": "Flawless Skull",
-        "Ethereal": "False",
-        "Enhanced": "False",
-        "ItemLevel": "0",
-        "LevelReq": 15,
-        "SocketCount": "0",
-        "PropertyList": [],
-        "Position": {
-          "x": 9,
-          "y": 2
         },
         "Size": {
           "invheight": 1,
@@ -126615,29 +126546,6 @@
         "Position": {
           "x": 7,
           "y": 1
-        },
-        "Size": {
-          "invheight": 1,
-          "invwidth": 1
-        },
-        "Worn": ""
-      },
-      {
-        "Quality": "Unknown",
-        "ID": "0",
-        "QualityCode": "",
-        "Title": "Flawless Skull",
-        "Tag": "Flawless Skull",
-        "TextTag": "Flawless Skull",
-        "Ethereal": "False",
-        "Enhanced": "False",
-        "ItemLevel": "0",
-        "LevelReq": 15,
-        "SocketCount": "0",
-        "PropertyList": [],
-        "Position": {
-          "x": 7,
-          "y": 2
         },
         "Size": {
           "invheight": 1,
@@ -126748,6 +126656,98 @@
         },
         "Size": {
           "invheight": 3,
+          "invwidth": 1
+        },
+        "Worn": ""
+      },
+      {
+        "Quality": "Unknown",
+        "ID": "0",
+        "QualityCode": "",
+        "Title": "Flawless Skull",
+        "Tag": "Flawless Skull",
+        "TextTag": "Flawless Skull",
+        "Ethereal": "False",
+        "Enhanced": "False",
+        "ItemLevel": "0",
+        "LevelReq": 15,
+        "SocketCount": "0",
+        "PropertyList": [],
+        "Position": {
+          "x": 9,
+          "y": 2
+        },
+        "Size": {
+          "invheight": 1,
+          "invwidth": 1
+        },
+        "Worn": ""
+      },
+      {
+        "Quality": "Unknown",
+        "ID": "0",
+        "QualityCode": "",
+        "Title": "Flawless Skull",
+        "Tag": "Flawless Skull",
+        "TextTag": "Flawless Skull",
+        "Ethereal": "False",
+        "Enhanced": "False",
+        "ItemLevel": "0",
+        "LevelReq": 15,
+        "SocketCount": "0",
+        "PropertyList": [],
+        "Position": {
+          "x": 8,
+          "y": 2
+        },
+        "Size": {
+          "invheight": 1,
+          "invwidth": 1
+        },
+        "Worn": ""
+      },
+      {
+        "Quality": "Unknown",
+        "ID": "0",
+        "QualityCode": "",
+        "Title": "Flawless Skull",
+        "Tag": "Flawless Skull",
+        "TextTag": "Flawless Skull",
+        "Ethereal": "False",
+        "Enhanced": "False",
+        "ItemLevel": "0",
+        "LevelReq": 15,
+        "SocketCount": "0",
+        "PropertyList": [],
+        "Position": {
+          "x": 7,
+          "y": 2
+        },
+        "Size": {
+          "invheight": 1,
+          "invwidth": 1
+        },
+        "Worn": ""
+      },
+      {
+        "Quality": "Normal",
+        "ID": "649707324",
+        "QualityCode": "q_normal",
+        "Title": "Key",
+        "Tag": "Key",
+        "TextTag": "Skeleton Key",
+        "Ethereal": "False",
+        "Enhanced": "False",
+        "ItemLevel": "99",
+        "LevelReq": 0,
+        "SocketCount": "0",
+        "PropertyList": [],
+        "Position": {
+          "x": 7,
+          "y": 0
+        },
+        "Size": {
+          "invheight": 1,
           "invwidth": 1
         },
         "Worn": ""
@@ -1475866,32 +1475866,6 @@
         "Worn": ""
       },
       {
-        "Quality": "Magic",
-        "ID": "1361463225",
-        "QualityCode": "q_magic",
-        "Title": "Beryl Large Charm",
-        "Tag": "Large Charm",
-        "TextTag": "Charm Medium",
-        "Ethereal": "False",
-        "Enhanced": "False",
-        "AlternateGraphics": "2",
-        "ItemLevel": "4",
-        "LevelReq": 1,
-        "SocketCount": "0",
-        "PropertyList": [
-          "Poison Resist +7%"
-        ],
-        "Position": {
-          "x": 1,
-          "y": 7
-        },
-        "Size": {
-          "invheight": 2,
-          "invwidth": 1
-        },
-        "Worn": ""
-      },
-      {
         "Quality": "Unknown",
         "ID": "0",
         "QualityCode": "",
@@ -1475996,6 +1475970,32 @@
         "Size": {
           "invheight": 2,
           "invwidth": 2
+        },
+        "Worn": ""
+      },
+      {
+        "Quality": "Magic",
+        "ID": "1361463225",
+        "QualityCode": "q_magic",
+        "Title": "Beryl Large Charm",
+        "Tag": "Large Charm",
+        "TextTag": "Charm Medium",
+        "Ethereal": "False",
+        "Enhanced": "False",
+        "AlternateGraphics": "2",
+        "ItemLevel": "4",
+        "LevelReq": 1,
+        "SocketCount": "0",
+        "PropertyList": [
+          "Poison Resist +7%"
+        ],
+        "Position": {
+          "x": 1,
+          "y": 7
+        },
+        "Size": {
+          "invheight": 2,
+          "invwidth": 1
         },
         "Worn": ""
       }
