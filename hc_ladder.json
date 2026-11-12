@@ -2107,7 +2107,7 @@
     "Class": "Sorceress",
     "Stats": {
       "Level": 98,
-      "Experience": 3387475655,
+      "Experience": 3387483828,
       "Strength": 70,
       "Dexterity": 25,
       "Vitality": 450,
@@ -2117,7 +2117,7 @@
       "BaseMana": 229,
       "Mana": 985,
       "Gold": 0,
-      "Stashed": 1695193
+      "Stashed": 1775445
     },
     "Bonus": {
       "Strength": 48,
@@ -724603,7 +724603,7 @@
     "Class": "Sorceress",
     "Stats": {
       "Level": 66,
-      "Experience": 214015685,
+      "Experience": 214015956,
       "Strength": 37,
       "Dexterity": 25,
       "Vitality": 248,
@@ -724612,7 +724612,7 @@
       "Life": 868,
       "BaseMana": 295,
       "Mana": 348,
-      "Gold": 0,
+      "Gold": 706,
       "Stashed": 2384767
     },
     "Bonus": {
@@ -726201,6 +726201,146 @@
         ],
         "Position": {
           "x": 7,
+          "y": 4
+        },
+        "Size": {
+          "invheight": 1,
+          "invwidth": 1
+        },
+        "Worn": ""
+      },
+      {
+        "Quality": "Unknown",
+        "ID": "0",
+        "QualityCode": "",
+        "Title": "Rejuvenation Potion",
+        "Tag": "Rejuvenation Potion",
+        "TextTag": "Rejuv Potion",
+        "Ethereal": "False",
+        "Enhanced": "False",
+        "ItemLevel": "0",
+        "LevelReq": 0,
+        "SocketCount": "0",
+        "PropertyList": [],
+        "Position": {
+          "x": 7,
+          "y": 3
+        },
+        "Size": {
+          "invheight": 1,
+          "invwidth": 1
+        },
+        "Worn": ""
+      },
+      {
+        "Quality": "Unknown",
+        "ID": "0",
+        "QualityCode": "",
+        "Title": "Minor Mana Potion",
+        "Tag": "Minor Mana Potion",
+        "TextTag": "Lesser Mana Potion",
+        "Ethereal": "False",
+        "Enhanced": "False",
+        "ItemLevel": "0",
+        "LevelReq": 0,
+        "SocketCount": "0",
+        "PropertyList": [],
+        "Position": {
+          "x": 7,
+          "y": 2
+        },
+        "Size": {
+          "invheight": 1,
+          "invwidth": 1
+        },
+        "Worn": ""
+      },
+      {
+        "Quality": "Magic",
+        "ID": "133171922",
+        "QualityCode": "q_magic",
+        "Title": "Amulet",
+        "Tag": "Amulet",
+        "TextTag": "amulet",
+        "Ethereal": "False",
+        "AlternateGraphics": "2",
+        "ItemLevel": "8",
+        "LevelReq": 2,
+        "PropertyList": [
+          "\u00ffc1Unidentified"
+        ],
+        "Position": {
+          "x": 7,
+          "y": 1
+        },
+        "Size": {
+          "invheight": 1,
+          "invwidth": 1
+        },
+        "Worn": ""
+      },
+      {
+        "Quality": "Unknown",
+        "ID": "0",
+        "QualityCode": "",
+        "Title": "Rejuvenation Potion",
+        "Tag": "Rejuvenation Potion",
+        "TextTag": "Rejuv Potion",
+        "Ethereal": "False",
+        "Enhanced": "False",
+        "ItemLevel": "0",
+        "LevelReq": 0,
+        "SocketCount": "0",
+        "PropertyList": [],
+        "Position": {
+          "x": 7,
+          "y": 0
+        },
+        "Size": {
+          "invheight": 1,
+          "invwidth": 1
+        },
+        "Worn": ""
+      },
+      {
+        "Quality": "Unknown",
+        "ID": "0",
+        "QualityCode": "",
+        "Title": "Chipped Diamond",
+        "Tag": "Chipped Diamond",
+        "TextTag": "Chipped Diamond",
+        "Ethereal": "False",
+        "Enhanced": "False",
+        "ItemLevel": "0",
+        "LevelReq": 1,
+        "SocketCount": "0",
+        "PropertyList": [],
+        "Position": {
+          "x": 6,
+          "y": 3
+        },
+        "Size": {
+          "invheight": 1,
+          "invwidth": 1
+        },
+        "Worn": ""
+      },
+      {
+        "Quality": "Magic",
+        "ID": "2211348865",
+        "QualityCode": "q_magic",
+        "Title": "Ring",
+        "Tag": "Ring",
+        "TextTag": "ring",
+        "Ethereal": "False",
+        "AlternateGraphics": "4",
+        "ItemLevel": "5",
+        "LevelReq": 1,
+        "PropertyList": [
+          "\u00ffc1Unidentified"
+        ],
+        "Position": {
+          "x": 5,
           "y": 4
         },
         "Size": {
