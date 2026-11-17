@@ -2107,7 +2107,7 @@
     "Class": "Sorceress",
     "Stats": {
       "Level": 98,
-      "Experience": 3389324930,
+      "Experience": 3392121325,
       "Strength": 70,
       "Dexterity": 25,
       "Vitality": 450,
@@ -2116,7 +2116,7 @@
       "Life": 2388,
       "BaseMana": 229,
       "Mana": 985,
-      "Gold": 108963,
+      "Gold": 34946,
       "Stashed": 2500000
     },
     "Bonus": {
@@ -2481,7 +2481,7 @@
         "Ethereal": "False",
         "Enhanced": "True",
         "Defense": "362",
-        "Durability": "15",
+        "Durability": "14",
         "DurabilityMaximum": "20",
         "ItemLevel": "75",
         "LevelReq": 63,
@@ -2657,7 +2657,7 @@
         "Ethereal": "False",
         "Enhanced": "True",
         "Defense": "12",
-        "Durability": "17",
+        "Durability": "16",
         "DurabilityMaximum": "18",
         "ItemLevel": "69",
         "LevelReq": 23,
@@ -2692,7 +2692,7 @@
         "Ethereal": "False",
         "Enhanced": "True",
         "Defense": "40",
-        "Durability": "14",
+        "Durability": "13",
         "DurabilityMaximum": "14",
         "ItemLevel": "87",
         "LevelReq": 32,
@@ -2947,7 +2947,7 @@
         "Enhanced": "True",
         "Block": "40",
         "Defense": "171",
-        "Durability": "73",
+        "Durability": "72",
         "DurabilityMaximum": "74",
         "ItemLevel": "72",
         "LevelReq": 72,
@@ -3661,32 +3661,6 @@
       },
       {
         "Quality": "Magic",
-        "ID": "1674768112",
-        "QualityCode": "q_magic",
-        "Title": "Small Charm of Vita",
-        "Tag": "Small Charm",
-        "TextTag": "Charm Small",
-        "Ethereal": "False",
-        "Enhanced": "False",
-        "AlternateGraphics": "0",
-        "ItemLevel": "88",
-        "LevelReq": 39,
-        "SocketCount": "0",
-        "PropertyList": [
-          "+20 to Life"
-        ],
-        "Position": {
-          "x": 1,
-          "y": 5
-        },
-        "Size": {
-          "invheight": 1,
-          "invwidth": 1
-        },
-        "Worn": ""
-      },
-      {
-        "Quality": "Magic",
         "ID": "4192416899",
         "QualityCode": "q_magic",
         "Title": "Burning Grand Charm of Balance",
@@ -4004,7 +3978,7 @@
       },
       {
         "Quality": "Normal",
-        "ID": "995943439",
+        "ID": "1741087167",
         "QualityCode": "q_normal",
         "Title": "Key",
         "Tag": "Key",
@@ -4026,44 +4000,24 @@
         "Worn": ""
       },
       {
-        "Quality": "Unknown",
-        "ID": "0",
-        "QualityCode": "",
-        "Title": "Flawless Skull",
-        "Tag": "Flawless Skull",
-        "TextTag": "Flawless Skull",
+        "Quality": "Magic",
+        "ID": "1674768112",
+        "QualityCode": "q_magic",
+        "Title": "Small Charm of Vita",
+        "Tag": "Small Charm",
+        "TextTag": "Charm Small",
         "Ethereal": "False",
         "Enhanced": "False",
-        "ItemLevel": "0",
-        "LevelReq": 15,
+        "AlternateGraphics": "0",
+        "ItemLevel": "88",
+        "LevelReq": 39,
         "SocketCount": "0",
-        "PropertyList": [],
+        "PropertyList": [
+          "+20 to Life"
+        ],
         "Position": {
-          "x": 7,
-          "y": 2
-        },
-        "Size": {
-          "invheight": 1,
-          "invwidth": 1
-        },
-        "Worn": ""
-      },
-      {
-        "Quality": "Unknown",
-        "ID": "0",
-        "QualityCode": "",
-        "Title": "Flawless Skull",
-        "Tag": "Flawless Skull",
-        "TextTag": "Flawless Skull",
-        "Ethereal": "False",
-        "Enhanced": "False",
-        "ItemLevel": "0",
-        "LevelReq": 15,
-        "SocketCount": "0",
-        "PropertyList": [],
-        "Position": {
-          "x": 8,
-          "y": 2
+          "x": 1,
+          "y": 5
         },
         "Size": {
           "invheight": 1,
@@ -4073,7 +4027,7 @@
       },
       {
         "Quality": "Normal",
-        "ID": "968412242",
+        "ID": "977888976",
         "QualityCode": "q_normal",
         "Title": "Key",
         "Tag": "Key",
@@ -4086,29 +4040,6 @@
         "PropertyList": [],
         "Position": {
           "x": 7,
-          "y": 4
-        },
-        "Size": {
-          "invheight": 1,
-          "invwidth": 1
-        },
-        "Worn": ""
-      },
-      {
-        "Quality": "Normal",
-        "ID": "463578911",
-        "QualityCode": "q_normal",
-        "Title": "Key",
-        "Tag": "Key",
-        "TextTag": "Skeleton Key",
-        "Ethereal": "False",
-        "Enhanced": "False",
-        "ItemLevel": "85",
-        "LevelReq": 0,
-        "SocketCount": "0",
-        "PropertyList": [],
-        "Position": {
-          "x": 8,
           "y": 4
         },
         "Size": {
@@ -4133,6 +4064,75 @@
         "Position": {
           "x": 9,
           "y": 2
+        },
+        "Size": {
+          "invheight": 1,
+          "invwidth": 1
+        },
+        "Worn": ""
+      },
+      {
+        "Quality": "Unknown",
+        "ID": "0",
+        "QualityCode": "",
+        "Title": "Flawless Skull",
+        "Tag": "Flawless Skull",
+        "TextTag": "Flawless Skull",
+        "Ethereal": "False",
+        "Enhanced": "False",
+        "ItemLevel": "0",
+        "LevelReq": 15,
+        "SocketCount": "0",
+        "PropertyList": [],
+        "Position": {
+          "x": 7,
+          "y": 2
+        },
+        "Size": {
+          "invheight": 1,
+          "invwidth": 1
+        },
+        "Worn": ""
+      },
+      {
+        "Quality": "Unknown",
+        "ID": "0",
+        "QualityCode": "",
+        "Title": "Flawless Skull",
+        "Tag": "Flawless Skull",
+        "TextTag": "Flawless Skull",
+        "Ethereal": "False",
+        "Enhanced": "False",
+        "ItemLevel": "0",
+        "LevelReq": 15,
+        "SocketCount": "0",
+        "PropertyList": [],
+        "Position": {
+          "x": 8,
+          "y": 2
+        },
+        "Size": {
+          "invheight": 1,
+          "invwidth": 1
+        },
+        "Worn": ""
+      },
+      {
+        "Quality": "Normal",
+        "ID": "3142051850",
+        "QualityCode": "q_normal",
+        "Title": "Key",
+        "Tag": "Key",
+        "TextTag": "Skeleton Key",
+        "Ethereal": "False",
+        "Enhanced": "False",
+        "ItemLevel": "99",
+        "LevelReq": 0,
+        "SocketCount": "0",
+        "PropertyList": [],
+        "Position": {
+          "x": 8,
+          "y": 4
         },
         "Size": {
           "invheight": 1,
@@ -724921,7 +724921,7 @@
     "Class": "Sorceress",
     "Stats": {
       "Level": 66,
-      "Experience": 214021924,
+      "Experience": 214022018,
       "Strength": 37,
       "Dexterity": 25,
       "Vitality": 248,
@@ -724930,8 +724930,8 @@
       "Life": 868,
       "BaseMana": 295,
       "Mana": 348,
-      "Gold": 11428,
-      "Stashed": 2403718
+      "Gold": 0,
+      "Stashed": 2418397
     },
     "Bonus": {
       "Strength": 29,
@@ -726494,101 +726494,6 @@
         },
         "Size": {
           "invheight": 1,
-          "invwidth": 1
-        },
-        "Worn": ""
-      },
-      {
-        "Quality": "Magic",
-        "ID": "551490501",
-        "QualityCode": "q_magic",
-        "Title": "Ring",
-        "Tag": "Ring",
-        "TextTag": "ring",
-        "Ethereal": "False",
-        "AlternateGraphics": "2",
-        "ItemLevel": "24",
-        "LevelReq": 11,
-        "PropertyList": [
-          "\u00ffc1Unidentified"
-        ],
-        "Position": {
-          "x": 7,
-          "y": 4
-        },
-        "Size": {
-          "invheight": 1,
-          "invwidth": 1
-        },
-        "Worn": ""
-      },
-      {
-        "Quality": "Unknown",
-        "ID": "0",
-        "QualityCode": "",
-        "Title": "Rejuvenation Potion",
-        "Tag": "Rejuvenation Potion",
-        "TextTag": "Rejuv Potion",
-        "Ethereal": "False",
-        "Enhanced": "False",
-        "ItemLevel": "0",
-        "LevelReq": 0,
-        "SocketCount": "0",
-        "PropertyList": [],
-        "Position": {
-          "x": 7,
-          "y": 3
-        },
-        "Size": {
-          "invheight": 1,
-          "invwidth": 1
-        },
-        "Worn": ""
-      },
-      {
-        "Quality": "Magic",
-        "ID": "3966688333",
-        "QualityCode": "q_magic",
-        "Title": "Small Charm",
-        "Tag": "Small Charm",
-        "TextTag": "Charm Small",
-        "Ethereal": "False",
-        "AlternateGraphics": "2",
-        "ItemLevel": "25",
-        "LevelReq": 5,
-        "PropertyList": [
-          "\u00ffc1Unidentified"
-        ],
-        "Position": {
-          "x": 7,
-          "y": 2
-        },
-        "Size": {
-          "invheight": 1,
-          "invwidth": 1
-        },
-        "Worn": ""
-      },
-      {
-        "Quality": "Magic",
-        "ID": "1652002589",
-        "QualityCode": "q_magic",
-        "Title": "Grand Charm",
-        "Tag": "Grand Charm",
-        "TextTag": "Charm Large",
-        "Ethereal": "False",
-        "AlternateGraphics": "2",
-        "ItemLevel": "25",
-        "LevelReq": 16,
-        "PropertyList": [
-          "\u00ffc1Unidentified"
-        ],
-        "Position": {
-          "x": 0,
-          "y": 2
-        },
-        "Size": {
-          "invheight": 3,
           "invwidth": 1
         },
         "Worn": ""
